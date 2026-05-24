@@ -27,13 +27,14 @@ body {
     justify-content: space-between;
 }
 
-/* AREA */
+/* ÁREA IMÁGENES */
 .foto-area {
     border: 2px dashed gray;
     width: 80%;
     min-height: 300px;
     margin: 30px auto 10px auto;
     padding: 10px;
+    transition: 0.2s;
 }
 
 .foto-area.dragover {
@@ -55,12 +56,6 @@ body {
     object-fit: cover;
     border-radius: 6px;
     cursor: pointer;
-    transition: 0.2s;
-}
-
-.galeria img:hover {
-    transform: scale(1.03);
-    opacity: 0.8;
 }
 
 /* BOTONES */
@@ -76,7 +71,9 @@ body {
 .azul { background: #007bff; }
 .gris { background: #555; }
 .verde { background: green; }
+.rojo { background: #dc3545; } /* 🔴 NUEVO COLOR */
 
+/* PANEL */
 .panel-hoja {
     text-align: center;
     margin-top: 15px;
@@ -158,35 +155,34 @@ function crearHoja(numero) {
         <div class="foto-area">
             <div style="text-align:center;">
                 <div style="margin-bottom:10px;font-size:12px;">
-                    📎 Subir / Arrastrar / Pegar imágenes
+                    📎 Subir imagen o arrastrar aquí
                 </div>
 
-                <button class="boton gris" id="btnSubir">📎 Subir imagen</button>
+                <button class="boton gris btnSubir">📎 Subir imagen</button>
             </div>
 
             <div class="galeria"></div>
         </div>
 
         <div class="panel-hoja">
-            <button class="boton verde" id="btnAgregar">➕ Agregar hoja</button>
-            <button class="boton azul" id="btnPDF">📄 Generar PDF</button>
+
+            <!-- 🔴 ORDEN CORRECTO -->
+            <button class="boton verde btnAdd">➕ Agregar hoja</button>
+            <button class="boton rojo btnDel">🗑 Eliminar hoja</button>
+            <button class="boton azul btnPDF">📄 Generar PDF</button>
+
         </div>
     `;
 
     let area = hoja.querySelector(".foto-area");
     let galeria = hoja.querySelector(".galeria");
 
-    let btnSubir = hoja.querySelector("#btnSubir");
-    let btnAgregar = hoja.querySelector("#btnAgregar");
-    let btnPDF = hoja.querySelector("#btnPDF");
+    let btnSubir = hoja.querySelector(".btnSubir");
+    let btnAdd = hoja.querySelector(".btnAdd");
+    let btnPDF = hoja.querySelector(".btnPDF");
+    let btnDel = hoja.querySelector(".btnDel");
 
-    /* =========================
-       BOTONES FIJOS (CORREGIDO)
-    ========================= */
-    btnAgregar.onclick = agregarHoja;
-    btnPDF.onclick = generarPDF;
-
-    /* SUBIR IMAGEN */
+    /* SUBIR */
     btnSubir.onclick = () => {
         let input = document.createElement("input");
         input.type = "file";
@@ -202,16 +198,16 @@ function crearHoja(numero) {
         input.click();
     };
 
-    /* PEGAR */
-    area.addEventListener("paste", e => {
-        for (let item of e.clipboardData.items) {
-            if (item.type.includes("image")) {
-                cargarImagen(item.getAsFile(), hoja, galeria);
-            }
-        }
-    });
+    /* AGREGAR */
+    btnAdd.onclick = () => agregarHoja();
 
-    /* DRAG & DROP */
+    /* PDF */
+    btnPDF.onclick = () => generarPDF();
+
+    /* ELIMINAR */
+    btnDel.onclick = () => eliminarHoja(hoja);
+
+    /* DRAG */
     area.addEventListener("dragover", e => {
         e.preventDefault();
         area.classList.add("dragover");
@@ -230,6 +226,15 @@ function crearHoja(numero) {
                 cargarImagen(file, hoja, galeria);
             }
         });
+    });
+
+    /* PEGAR */
+    area.addEventListener("paste", e => {
+        for (let item of e.clipboardData.items) {
+            if (item.type.includes("image")) {
+                cargarImagen(item.getAsFile(), hoja, galeria);
+            }
+        }
     });
 
     return hoja;
@@ -261,6 +266,78 @@ function cargarImagen(file, hoja, galeria) {
 }
 
 /* =========================
+   HOJAS
+========================= */
+function agregarHoja() {
+    let cont = document.getElementById("contenedor");
+
+    let n = document.querySelectorAll(".hoja").length + 1;
+
+    cont.appendChild(crearHoja(n));
+
+    renumerarHojas();
+}
+
+function eliminarHoja(hoja) {
+    hoja.remove();
+    renumerarHojas();
+}
+
+/* =========================
+   REGLAS UI
+========================= */
+function renumerarHojas() {
+
+    let hojas = document.querySelectorAll(".hoja");
+
+    hojas.forEach((h, i) => {
+
+        let titulo = h.querySelector(".header span:last-child");
+        if (titulo) titulo.textContent = "Hoja " + (i + 1);
+
+        let btnDel = h.querySelector(".btnDel");
+        if (btnDel) btnDel.style.display = (i === 0) ? "none" : "inline-block";
+    });
+
+    hojas.forEach(h => {
+        let btnAdd = h.querySelector(".btnAdd");
+        if (btnAdd) btnAdd.style.display = "none";
+    });
+
+    if (hojas.length > 0) {
+        let last = hojas[hojas.length - 1];
+        let btnAdd = last.querySelector(".btnAdd");
+        if (btnAdd) btnAdd.style.display = "inline-block";
+    }
+}
+
+/* =========================
+   PDF
+========================= */
+function generarPDF() {
+
+    let hojas = [...document.querySelectorAll(".hoja")]
+        .map(h => h.fotos || []);
+
+    fetch("/generar", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            hojas: hojas,
+            nombre: "RIJ_CFE"
+        })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "RIJ_CFE.pdf";
+        a.click();
+    });
+}
+
+/* =========================
    MODAL
 ========================= */
 function cerrarModal() {
@@ -281,7 +358,6 @@ function cambiarImagen() {
 
     let input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
 
     input.onchange = e => {
 
@@ -308,41 +384,8 @@ function cambiarImagen() {
     cerrarModal();
 }
 
-/* =========================
-   HOJAS
-========================= */
-function agregarHoja() {
-    let n = document.querySelectorAll(".hoja").length + 1;
-    document.getElementById("contenedor").appendChild(crearHoja(n));
-}
-
-/* =========================
-   PDF (ARREGLADO Y FUNCIONAL)
-========================= */
-function generarPDF() {
-
-    let hojas = [...document.querySelectorAll(".hoja")]
-        .map(h => h.fotos || []);
-
-    fetch("/generar", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-            hojas: hojas,
-            nombre: "RIJ_CFE"
-        })
-    })
-    .then(res => res.blob())
-    .then(blob => {
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = "RIJ_CFE.pdf";
-        a.click();
-    });
-}
-
-window.onload = agregarHoja;
+/* INIT */
+window.onload = () => agregarHoja();
 
 </script>
 
