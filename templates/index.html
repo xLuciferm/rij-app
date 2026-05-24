@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RIJ</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f0f0f0;
+        }
+
+        .hoja {
+            width: 600px;
+            height: 800px;
+            background: white;
+            margin: 20px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .titulo {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .fecha {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        .numero {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .foto-area {
+            border: 2px dashed gray;
+            width: 80%;
+            height: 300px;
+            margin: 100px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        video, img {
+            width: 100%;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<button onclick="agregarHoja()">➕ Nueva hoja</button>
+
+<div id="contenedor"></div>
+
+<script>
+let fotos = [];
+
+function crearPlantilla(numero) {
+    let hoja = document.createElement("div");
+    hoja.className = "hoja";
+
+    hoja.innerHTML = `
+        <div class="fecha">19/12/2025</div>
+        <div class="numero">${numero}</div>
+        <div class="titulo">REUNION DE INICIO DE JORNADA</div>
+
+        <div class="foto-area">
+            <p>TOMAR FOTO</p>
+        </div>
+    `;
+
+    let area = hoja.querySelector(".foto-area");
+
+    let video = document.createElement("video");
+    video.autoplay = true;
+    video.playsInline = true;
+
+    let btn = document.createElement("button");
+    btn.innerText = "📸 Tomar foto";
+
+    let canvas = document.createElement("canvas");
+
+    // 🔥 CAMARA SOLO CUANDO PRESIONAS
+    btn.onclick = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+
+            area.innerHTML = "";
+            area.appendChild(video);
+            area.appendChild(btn);
+
+            btn.innerText = "✅ Capturar";
+
+            // SEGUNDO CLICK = FOTO
+            btn.onclick = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                canvas.getContext("2d").drawImage(video, 0, 0);
+
+                let img = document.createElement("img");
+                img.src = canvas.toDataURL("image/png");
+
+                area.innerHTML = "";
+                area.appendChild(img);
+
+                fotos.push(img.src);
+
+                let seguir = confirm("¿Agregar otra diapositiva?");
+                if (seguir) agregarHoja();
+            };
+
+        } catch (err) {
+            alert("No se pudo abrir la cámara: " + err);
+        }
+    };
+
+    area.appendChild(btn);
+
+    return hoja;
+}
+
+function agregarHoja() {
+    let numero = document.querySelectorAll(".hoja").length + 1;
+    let hoja = crearPlantilla(numero);
+    document.getElementById("contenedor").appendChild(hoja);
+}
+
+// 👇 PRIMERA HOJA AUTOMÁTICA
+window.onload = () => {
+    agregarHoja();
+};
+</script>
+
+</body>
+</html>
