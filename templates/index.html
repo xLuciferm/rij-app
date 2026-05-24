@@ -316,42 +316,34 @@ function renumerarHojas() {
 ========================= */
 function generarPDF() {
 
-    let hojas = [...document.querySelectorAll(".hoja")]
-        .map(h => h.fotos || []);
+    let nombre = prompt("Nombre del PDF:", "RIJ_CFE");
+
+    if (!nombre) return;
+
+    let datos = {
+        hojas: [...document.querySelectorAll(".hoja")].map(h => h.fotos || []),
+        nombre: nombre
+    };
 
     fetch("/generar", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-            hojas: hojas,
-            nombre: "RIJ_CFE"
-        })
+        body: JSON.stringify(datos)
     })
-    .then(response => response.blob())
+    .then(res => res.blob())
     .then(blob => {
 
         const url = URL.createObjectURL(blob);
 
-        // 🔥 Detectar móvil
-        const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        // 📱 VISTA PREVIA
+        let win = window.open(url, "_blank");
 
-        if (esMovil) {
-
-            // 📱 EN MÓVIL: abrir PDF (permite guardar desde visor del sistema)
-            window.open(url, "_blank");
-
-        } else {
-
-            // 💻 EN PC: descarga normal
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "RIJ_CFE.pdf";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+        if (!win) {
+            alert("Activa ventanas emergentes para ver el PDF");
         }
 
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        // opcional: liberar memoria
+        setTimeout(() => URL.revokeObjectURL(url), 20000);
     });
 }
 
