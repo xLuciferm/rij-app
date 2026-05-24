@@ -4,6 +4,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 import base64
 from io import BytesIO
+import os
 
 app = Flask(__name__)
 
@@ -13,6 +14,7 @@ def home():
 
 @app.route("/generar", methods=["POST"])
 def generar():
+
     data = request.json
     fotos = data["fotos"]
     cantidad = data["cantidad"]
@@ -22,34 +24,36 @@ def generar():
 
     width, height = letter
 
-    plantilla = ImageReader("plantilla.jpg")
+    # 🟢 CARGAR PLANTILLA DE FORMA SEGURA
+    ruta = os.path.join(os.path.dirname(__file__), "plantilla.jpg")
+    plantilla = ImageReader(ruta)
 
     img_width = 400
     img_height = 250
 
+    # 🔥 FOR CORRECTO (INDENTACIÓN ARREGLADA)
     for i, foto in enumerate(fotos):
 
-    c.drawImage(plantilla, 0, 0, width=width, height=height)
+        # fondo
+        c.drawImage(plantilla, 0, 0, width=width, height=height)
 
-    img_data = base64.b64decode(foto.split(",")[1])
-    img = ImageReader(BytesIO(img_data))
+        # imagen base64
+        img_data = base64.b64decode(foto.split(",")[1])
+        img = ImageReader(BytesIO(img_data))
 
-    img_width = 400
-    img_height = 250
+        # posición centrada y más abajo
+        x = (width - img_width) / 2
+        y = 180
 
-    # 🎯 CENTRADO HORIZONTAL
-    x = (width - img_width) / 2
+        c.drawImage(img, x, y, width=img_width, height=img_height)
 
-    # 📉 MÁS ABAJO (AJUSTE PRINCIPAL)
-    y = 180
+        # número de hoja
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(500, 750, str(i + 1))
 
-    c.drawImage(img, x, y, width=img_width, height=img_height)
+        c.showPage()
 
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(500, 750, str(i + 1))
-
-    c.showPage()
-
+    # 🟢 HOJA FINAL
     c.drawImage(plantilla, 0, 0, width=width, height=height)
 
     c.setFont("Helvetica-Bold", 14)
