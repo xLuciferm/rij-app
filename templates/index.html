@@ -1,181 +1,175 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>RIJ</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #f0f0f0;
-        }
+<title>RIJ PRO</title>
 
-        .hoja {
-            width: 600px;
-            height: 800px;
-            background: white;
-            margin: 20px auto;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            position: relative;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #f0f0f0;
+}
 
-        .titulo {
-            text-align: center;
-            font-weight: bold;
-        }
+.hoja {
+    width: 600px;
+    height: 800px;
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+    position: relative;
+}
 
-        .fecha {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-        }
+.foto-area {
+    border: 2px dashed gray;
+    width: 80%;
+    height: 300px;
+    margin: 100px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-        .numero {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-        }
+.boton-agregar {
+    padding: 15px;
+    background: #007bff;
+    color: white;
+    border: none;
+}
 
-        .foto-area {
-            border: 2px dashed gray;
-            width: 80%;
-            height: 300px;
-            margin: 100px auto;
-            position: relative;
-            overflow: hidden;
-        }
+#camaraFull {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    display: none;
+    z-index: 999;
+}
 
-        video, img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+#camaraFull video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-        .boton-camara {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: red;
-            border: 5px solid white;
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
+#btnFoto {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: red;
+    border: 5px solid white;
+}
 
-        button {
-            margin: 10px;
-            padding: 10px;
-            border: none;
-            background: #007bff;
-            color: white;
-            border-radius: 5px;
-        }
+#btnCerrar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: white;
+    padding: 10px;
+}
+</style>
 
-        .acciones {
-            text-align: center;
-        }
-    </style>
 </head>
 <body>
 
-<div class="acciones">
-    <button onclick="agregarHoja()">➕ Nueva hoja</button>
-    <button onclick="generarPDF()">📄 Generar PDF</button>
-</div>
-
 <div id="contenedor"></div>
+
+<!-- 📸 CAMARA FULLSCREEN -->
+<div id="camaraFull">
+    <video id="video" autoplay></video>
+    <button id="btnFoto"></button>
+    <button id="btnCerrar">❌</button>
+</div>
 
 <script>
 let fotos = [];
+let hojaActual = null;
+let stream;
 
-function crearPlantilla(numero) {
+// 📄 crear hoja
+function crearHoja() {
     let hoja = document.createElement("div");
     hoja.className = "hoja";
 
     hoja.innerHTML = `
-        <div class="fecha">${new Date().toLocaleDateString()}</div>
-        <div class="numero">${numero}</div>
-        <div class="titulo">REUNION DE INICIO DE JORNADA</div>
-        <div class="foto-area"></div>
+        <h3 style="text-align:center;">REUNION DE INICIO DE JORNADA</h3>
+        <div class="foto-area">
+            <button class="boton-agregar">Agregar imagen</button>
+        </div>
     `;
 
-    let area = hoja.querySelector(".foto-area");
+    let btn = hoja.querySelector(".boton-agregar");
 
-    let video = document.createElement("video");
-    video.autoplay = true;
-
-    let boton = document.createElement("button");
-    boton.className = "boton-camara";
-
-    let canvas = document.createElement("canvas");
-
-    // 📸 cámara trasera
-    navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        }
-    })
-    .then(stream => video.srcObject = stream)
-    .catch(err => alert("Error cámara: " + err));
-
-    // 📸 tomar foto SOLO al presionar
-    boton.onclick = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-        canvas.getContext("2d").drawImage(video, 0, 0);
-
-        let img = document.createElement("img");
-        img.src = canvas.toDataURL("image/png");
-
-        area.innerHTML = "";
-        area.appendChild(img);
-
-        fotos.push(img.src);
-
-        let seguir = confirm("¿Agregar otra hoja?");
-        if (seguir) agregarHoja();
+    btn.onclick = () => {
+        hojaActual = hoja;
+        abrirCamara();
     };
-
-    area.appendChild(video);
-    area.appendChild(boton);
 
     return hoja;
 }
 
-function agregarHoja() {
-    let numero = document.querySelectorAll(".hoja").length + 1;
-    let hoja = crearPlantilla(numero);
-    document.getElementById("contenedor").appendChild(hoja);
-}
+// 📸 abrir cámara
+function abrirCamara() {
+    document.getElementById("camaraFull").style.display = "block";
 
-// 📄 generar PDF
-function generarPDF() {
-    let cantidad = prompt("¿Cuántas fotos del personal?");
-
-    fetch("/generar", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            fotos: fotos,
-            cantidad: cantidad
-        })
+    navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
     })
-    .then(res => res.blob())
-    .then(blob => {
-        let url = window.URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = "reporte.pdf";
-        a.click();
+    .then(s => {
+        stream = s;
+        document.getElementById("video").srcObject = stream;
     });
 }
 
-// primera hoja automática
+// 📸 tomar foto
+document.getElementById("btnFoto").onclick = () => {
+
+    let video = document.getElementById("video");
+    let canvas = document.createElement("canvas");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    canvas.getContext("2d").drawImage(video, 0, 0);
+
+    let img = document.createElement("img");
+    img.src = canvas.toDataURL("image/png");
+
+    let area = hojaActual.querySelector(".foto-area");
+    area.innerHTML = "";
+    area.appendChild(img);
+
+    fotos.push(img.src);
+
+    cerrarCamara();
+
+    if (confirm("¿Agregar otra hoja?")) {
+        agregarHoja();
+    }
+};
+
+// ❌ cerrar cámara
+document.getElementById("btnCerrar").onclick = cerrarCamara;
+
+function cerrarCamara() {
+    document.getElementById("camaraFull").style.display = "none";
+
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+}
+
+// ➕ agregar hoja
+function agregarHoja() {
+    document.getElementById("contenedor").appendChild(crearHoja());
+}
+
+// inicial
 window.onload = () => {
     agregarHoja();
 };
