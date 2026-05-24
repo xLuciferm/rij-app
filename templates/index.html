@@ -329,11 +329,28 @@ function generarPDF() {
     })
     .then(res => res.blob())
     .then(blob => {
+
         let url = URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = "RIJ_CFE.pdf";
-        a.click();
+
+        // 🔥 Detectar si es móvil
+        let esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (esMovil) {
+            // 📱 EN MÓVIL: abrir en nueva pestaña (permite descargar manual)
+            window.open(url, "_blank");
+
+        } else {
+            // 💻 EN PC: descarga normal
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "RIJ_CFE.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        // liberar memoria
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
     });
 }
 
