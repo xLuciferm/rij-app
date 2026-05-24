@@ -40,10 +40,8 @@
             width: 80%;
             height: 300px;
             margin: 100px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
+            position: relative;
+            overflow: hidden;
         }
 
         video, img {
@@ -52,8 +50,20 @@
             object-fit: cover;
         }
 
+        .boton-camara {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: red;
+            border: 5px solid white;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
         button {
-            margin-top: 10px;
+            margin: 10px;
             padding: 10px;
             border: none;
             background: #007bff;
@@ -63,7 +73,6 @@
 
         .acciones {
             text-align: center;
-            margin: 20px;
         }
     </style>
 </head>
@@ -87,7 +96,6 @@ function crearPlantilla(numero) {
         <div class="fecha">${new Date().toLocaleDateString()}</div>
         <div class="numero">${numero}</div>
         <div class="titulo">REUNION DE INICIO DE JORNADA</div>
-
         <div class="foto-area"></div>
     `;
 
@@ -96,12 +104,12 @@ function crearPlantilla(numero) {
     let video = document.createElement("video");
     video.autoplay = true;
 
-    let btn = document.createElement("button");
-    btn.innerText = "📸 Tomar foto";
+    let boton = document.createElement("button");
+    boton.className = "boton-camara";
 
     let canvas = document.createElement("canvas");
 
-    // 🔥 CÁMARA TRASERA
+    // 📸 cámara trasera
     navigator.mediaDevices.getUserMedia({
         video: {
             facingMode: "environment",
@@ -112,7 +120,8 @@ function crearPlantilla(numero) {
     .then(stream => video.srcObject = stream)
     .catch(err => alert("Error cámara: " + err));
 
-    btn.onclick = () => {
+    // 📸 tomar foto SOLO al presionar
+    boton.onclick = () => {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
@@ -131,7 +140,7 @@ function crearPlantilla(numero) {
     };
 
     area.appendChild(video);
-    area.appendChild(btn);
+    area.appendChild(boton);
 
     return hoja;
 }
@@ -142,7 +151,7 @@ function agregarHoja() {
     document.getElementById("contenedor").appendChild(hoja);
 }
 
-// 🔥 GENERAR PDF
+// 📄 generar PDF
 function generarPDF() {
     let cantidad = prompt("¿Cuántas fotos del personal?");
 
@@ -166,7 +175,7 @@ function generarPDF() {
     });
 }
 
-// 🔥 PRIMERA HOJA AUTOMÁTICA
+// primera hoja automática
 window.onload = () => {
     agregarHoja();
 };
