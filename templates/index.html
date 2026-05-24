@@ -92,6 +92,15 @@ body {
     background: white;
     padding: 10px;
 }
+
+/* ⏳ LOADING */
+#loadingCam {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+}
 </style>
 
 </head>
@@ -101,8 +110,9 @@ body {
 
 <!-- 📸 CAMARA FULLSCREEN -->
 <div id="camaraFull">
-    <video id="video" autoplay></video>
-    <button id="btnFoto">Tomar foto</button>
+    <video id="video" autoplay playsinline></video>
+    <p id="loadingCam">Cargando cámara...</p>
+    <button id="btnFoto" disabled>Tomar foto</button>
     <button id="btnCerrar">❌</button>
 </div>
 
@@ -141,24 +151,44 @@ function crearHoja(numero) {
 
 // 📸 ABRIR CAMARA
 function abrirCamara() {
-    document.getElementById("camaraFull").style.display = "block";
+    let camara = document.getElementById("camaraFull");
+    let video = document.getElementById("video");
+    let btnFoto = document.getElementById("btnFoto");
+    let loading = document.getElementById("loadingCam");
+
+    camara.style.display = "block";
+    btnFoto.disabled = true;
+    loading.style.display = "block";
 
     navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" }
     })
     .then(s => {
         stream = s;
-        document.getElementById("video").srcObject = stream;
+        video.srcObject = stream;
+
+        video.onloadedmetadata = () => {
+            video.play();
+
+            // 🔥 YA ESTÁ LISTA
+            btnFoto.disabled = false;
+            loading.style.display = "none";
+        };
     })
     .catch(err => alert("Error cámara: " + err));
 }
 
-// 📸 TOMAR FOTO (ÚNICO LUGAR DONDE SE GUARDA)
+// 📸 TOMAR FOTO
 document.getElementById("btnFoto").onclick = () => {
 
     let video = document.getElementById("video");
-    let canvas = document.createElement("canvas");
 
+    if (!video.videoWidth) {
+        alert("Espera a que la cámara cargue");
+        return;
+    }
+
+    let canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -181,16 +211,23 @@ document.getElementById("btnFoto").onclick = () => {
     }
 };
 
-// ❌ CERRAR CAMARA (NO GUARDA NADA)
+// ❌ CERRAR CAMARA (NO GUARDA)
 document.getElementById("btnCerrar").onclick = cerrarCamara;
 
 function cerrarCamara() {
-    document.getElementById("camaraFull").style.display = "none";
+    let camara = document.getElementById("camaraFull");
+    let video = document.getElementById("video");
+
+    camara.style.display = "none";
 
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
+
+    // 🔥 limpiar completamente
+    video.srcObject = null;
+    video.src = "";
 }
 
 // ➕ AGREGAR HOJA
