@@ -19,6 +19,22 @@ body {
     position: relative;
 }
 
+.header {
+    background: #0a7a3d;
+    color: white;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 40px;
+    background: #0a7a3d;
+}
+
 .foto-area {
     border: 2px dashed gray;
     width: 80%;
@@ -30,12 +46,14 @@ body {
 }
 
 .boton-agregar {
-    padding: 15px;
+    padding: 15px 25px;
     background: #007bff;
     color: white;
     border: none;
+    font-size: 16px;
 }
 
+/* 📸 FULLSCREEN */
 #camaraFull {
     position: fixed;
     top: 0;
@@ -53,18 +71,20 @@ body {
     object-fit: cover;
 }
 
+/* 📸 BOTÓN TOMAR FOTO */
 #btnFoto {
     position: absolute;
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
+    padding: 15px 25px;
+    font-size: 18px;
     background: red;
-    border: 5px solid white;
+    color: white;
+    border: none;
 }
 
+/* ❌ BOTÓN CERRAR */
 #btnCerrar {
     position: absolute;
     top: 20px;
@@ -82,25 +102,31 @@ body {
 <!-- 📸 CAMARA FULLSCREEN -->
 <div id="camaraFull">
     <video id="video" autoplay></video>
-    <button id="btnFoto"></button>
+    <button id="btnFoto">Tomar foto</button>
     <button id="btnCerrar">❌</button>
 </div>
 
 <script>
 let fotos = [];
 let hojaActual = null;
-let stream;
+let stream = null;
 
-// 📄 crear hoja
-function crearHoja() {
+// 📄 CREAR HOJA
+function crearHoja(numero) {
     let hoja = document.createElement("div");
     hoja.className = "hoja";
 
     hoja.innerHTML = `
-        <h3 style="text-align:center;">REUNION DE INICIO DE JORNADA</h3>
-        <div class="foto-area">
-            <button class="boton-agregar">Agregar imagen</button>
+        <div class="header">
+            <span>REUNION DE INICIO DE JORNADA</span>
+            <span>${numero}</span>
         </div>
+
+        <div class="foto-area">
+            <button class="boton-agregar">Agregar foto</button>
+        </div>
+
+        <div class="footer"></div>
     `;
 
     let btn = hoja.querySelector(".boton-agregar");
@@ -113,7 +139,7 @@ function crearHoja() {
     return hoja;
 }
 
-// 📸 abrir cámara
+// 📸 ABRIR CAMARA
 function abrirCamara() {
     document.getElementById("camaraFull").style.display = "block";
 
@@ -123,10 +149,11 @@ function abrirCamara() {
     .then(s => {
         stream = s;
         document.getElementById("video").srcObject = stream;
-    });
+    })
+    .catch(err => alert("Error cámara: " + err));
 }
 
-// 📸 tomar foto
+// 📸 TOMAR FOTO (ÚNICO LUGAR DONDE SE GUARDA)
 document.getElementById("btnFoto").onclick = () => {
 
     let video = document.getElementById("video");
@@ -139,6 +166,7 @@ document.getElementById("btnFoto").onclick = () => {
 
     let img = document.createElement("img");
     img.src = canvas.toDataURL("image/png");
+    img.style.width = "100%";
 
     let area = hojaActual.querySelector(".foto-area");
     area.innerHTML = "";
@@ -153,7 +181,7 @@ document.getElementById("btnFoto").onclick = () => {
     }
 };
 
-// ❌ cerrar cámara
+// ❌ CERRAR CAMARA (NO GUARDA NADA)
 document.getElementById("btnCerrar").onclick = cerrarCamara;
 
 function cerrarCamara() {
@@ -161,15 +189,17 @@ function cerrarCamara() {
 
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
+        stream = null;
     }
 }
 
-// ➕ agregar hoja
+// ➕ AGREGAR HOJA
 function agregarHoja() {
-    document.getElementById("contenedor").appendChild(crearHoja());
+    let numero = document.querySelectorAll(".hoja").length + 1;
+    document.getElementById("contenedor").appendChild(crearHoja(numero));
 }
 
-// inicial
+// INICIO
 window.onload = () => {
     agregarHoja();
 };
