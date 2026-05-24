@@ -316,34 +316,37 @@ function renumerarHojas() {
 ========================= */
 function generarPDF() {
 
-    let nombre = prompt("Nombre del PDF:", "RIJ_CFE");
-
-    if (!nombre) return;
-
-    let datos = {
-        hojas: [...document.querySelectorAll(".hoja")].map(h => h.fotos || []),
-        nombre: nombre
-    };
+    let hojas = [...document.querySelectorAll(".hoja")]
+        .map(h => h.fotos || []);
 
     fetch("/generar", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(datos)
+        body: JSON.stringify({
+            hojas: hojas,
+            nombre: "RIJ_CFE"
+        })
     })
     .then(res => res.blob())
     .then(blob => {
 
         const url = URL.createObjectURL(blob);
 
-        // 📱 VISTA PREVIA
-        let win = window.open(url, "_blank");
+        const a = document.createElement("a");
+        a.href = url;
 
-        if (!win) {
-            alert("Activa ventanas emergentes para ver el PDF");
-        }
+        // 📱 clave para celular
+        a.target = "_blank";
 
-        // opcional: liberar memoria
-        setTimeout(() => URL.revokeObjectURL(url), 20000);
+        // nombre del archivo
+        a.download = "RIJ_CFE.pdf";
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        // limpiar memoria
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
     });
 }
 
