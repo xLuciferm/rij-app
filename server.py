@@ -5,6 +5,7 @@ from reportlab.lib.utils import ImageReader
 import base64
 from io import BytesIO
 import os
+import traceback
 
 app = Flask(__name__)
 
@@ -15,49 +16,71 @@ def home():
 @app.route("/generar", methods=["POST"])
 def generar():
 
-    data = request.json
-    fotos = data["fotos"]
-    cantidad = data["cantidad"]
-    nombre = data.get("nombre", "RIJ_CFE")
+    try:
+        data = request.json
+        fotos = data.get("fotos", [])
+        cantidad = data.get("cantidad", 0)
+        nombre = data.get("nombre", "RIJ_CFE")
 
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=letter)
 
-    width, height = letter
+        width, height = letter
 
-    ruta = os.path.join(os.path.dirname(__file__), "plantilla.jpg")
-    plantilla = ImageReader(ruta)
+        # 🟢 plantilla segura
+        ruta = os.path.join(os.path.dirname(__file__), "plantilla.jpg")
+        plantilla = ImageReader(ruta)
 
-    img_width = 400
-    img_height = 250
+        img_width = 400
+        img_height = 250
 
-    for i, foto in enumerate(fotos):
+        for i, foto in enumerate(fotos):
 
+            # fondo
+            c.drawImage(plantilla, 0, 0, width=width, height=height)
+
+            try:
+                # 🔥 VALIDACIÓN SEGURA DE BASE64
+                if foto and "," in foto:
+
+                    img_data = base64.b64decode(foto.split(",")[1])
+                    img = ImageReader(BytesIO(img_data))
+
+                    x = (width - img_width) / 2
+                    y = 180
+
+                    c.drawImage(img, x, y, width=img_width, height=img_height)
+
+                else:
+                    print(f"⚠ Foto inválida en índice {i}")
+
+            except Exception as e:
+                print(f"❌ Error en foto {i}: {e}")
+
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(500, 750, str(i + 1))
+
+            c.showPage()
+
+        # 🟢 hoja final
         c.drawImage(plantilla, 0, 0, width=width, height=height)
 
-        img_data = base64.b64decode(foto.split(",")[1])
-        img = ImageReader(BytesIO(img_data))
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(150, 500, "FOTOS DEL PERSONAL PRESENTE")
+        c.drawString(150, 470, f"Cantidad: {cantidad}")
 
-        x = (width - img_width) / 2
-        y = 180
+        c.save()
+        buffer.seek(0)
 
-        c.drawImage(img, x, y, width=img_width, height=img_height)
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=nombre + ".pdf"
+        )
 
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(500, 750, str(i + 1))
-
-        c.showPage()
-
-    c.drawImage(plantilla, 0, 0, width=width, height=height)
-
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(150, 500, "FOTOS DEL PERSONAL PRESENTE")
-    c.drawString(150, 470, f"Cantidad: {cantidad}")
-
-    c.save()
-    buffer.seek(0)
-
-    return send_file(buffer, as_attachment=True, download_name=nombre + ".pdf")
+    except Exception as e:
+        traceback.print_exc()
+        return "Error interno al generar PDF", 500
 
 
 if __name__ == "__main__":
