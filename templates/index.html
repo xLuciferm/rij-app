@@ -48,16 +48,31 @@
 
         video, img {
             width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         button {
             margin-top: 10px;
+            padding: 10px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .acciones {
+            text-align: center;
+            margin: 20px;
         }
     </style>
 </head>
 <body>
 
-<button onclick="agregarHoja()">➕ Nueva hoja</button>
+<div class="acciones">
+    <button onclick="agregarHoja()">➕ Nueva hoja</button>
+    <button onclick="generarPDF()">📄 Generar PDF</button>
+</div>
 
 <div id="contenedor"></div>
 
@@ -69,62 +84,53 @@ function crearPlantilla(numero) {
     hoja.className = "hoja";
 
     hoja.innerHTML = `
-        <div class="fecha">19/12/2025</div>
+        <div class="fecha">${new Date().toLocaleDateString()}</div>
         <div class="numero">${numero}</div>
         <div class="titulo">REUNION DE INICIO DE JORNADA</div>
 
-        <div class="foto-area">
-            <p>TOMAR FOTO</p>
-        </div>
+        <div class="foto-area"></div>
     `;
 
     let area = hoja.querySelector(".foto-area");
 
     let video = document.createElement("video");
     video.autoplay = true;
-    video.playsInline = true;
 
     let btn = document.createElement("button");
     btn.innerText = "📸 Tomar foto";
 
     let canvas = document.createElement("canvas");
 
-    // 🔥 CAMARA SOLO CUANDO PRESIONAS
-    btn.onclick = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-
-            area.innerHTML = "";
-            area.appendChild(video);
-            area.appendChild(btn);
-
-            btn.innerText = "✅ Capturar";
-
-            // SEGUNDO CLICK = FOTO
-            btn.onclick = () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-
-                canvas.getContext("2d").drawImage(video, 0, 0);
-
-                let img = document.createElement("img");
-                img.src = canvas.toDataURL("image/png");
-
-                area.innerHTML = "";
-                area.appendChild(img);
-
-                fotos.push(img.src);
-
-                let seguir = confirm("¿Agregar otra diapositiva?");
-                if (seguir) agregarHoja();
-            };
-
-        } catch (err) {
-            alert("No se pudo abrir la cámara: " + err);
+    // 🔥 CÁMARA TRASERA
+    navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
         }
+    })
+    .then(stream => video.srcObject = stream)
+    .catch(err => alert("Error cámara: " + err));
+
+    btn.onclick = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        canvas.getContext("2d").drawImage(video, 0, 0);
+
+        let img = document.createElement("img");
+        img.src = canvas.toDataURL("image/png");
+
+        area.innerHTML = "";
+        area.appendChild(img);
+
+        fotos.push(img.src);
+
+        let seguir = confirm("¿Agregar otra hoja?");
+        if (seguir) agregarHoja();
     };
 
+    area.appendChild(video);
     area.appendChild(btn);
 
     return hoja;
@@ -136,7 +142,31 @@ function agregarHoja() {
     document.getElementById("contenedor").appendChild(hoja);
 }
 
-// 👇 PRIMERA HOJA AUTOMÁTICA
+// 🔥 GENERAR PDF
+function generarPDF() {
+    let cantidad = prompt("¿Cuántas fotos del personal?");
+
+    fetch("/generar", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            fotos: fotos,
+            cantidad: cantidad
+        })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "reporte.pdf";
+        a.click();
+    });
+}
+
+// 🔥 PRIMERA HOJA AUTOMÁTICA
 window.onload = () => {
     agregarHoja();
 };
