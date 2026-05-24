@@ -27,7 +27,7 @@ def generar():
 
         width, height = letter
 
-        # 🟢 plantilla segura
+        # 🔥 AQUÍ VA TU RUTA CORRECTA
         ruta = os.path.join(os.path.dirname(__file__), "plantilla.jpg")
         plantilla = ImageReader(ruta)
 
@@ -36,13 +36,10 @@ def generar():
 
         for i, foto in enumerate(fotos):
 
-            # fondo
             c.drawImage(plantilla, 0, 0, width=width, height=height)
 
             try:
-                # 🔥 VALIDACIÓN SEGURA DE BASE64
                 if foto and "," in foto:
-
                     img_data = base64.b64decode(foto.split(",")[1])
                     img = ImageReader(BytesIO(img_data))
 
@@ -51,18 +48,15 @@ def generar():
 
                     c.drawImage(img, x, y, width=img_width, height=img_height)
 
-                else:
-                    print(f"⚠ Foto inválida en índice {i}")
-
             except Exception as e:
-                print(f"❌ Error en foto {i}: {e}")
+                print(f"Error en foto {i}: {e}")
 
             c.setFont("Helvetica-Bold", 12)
             c.drawString(500, 750, str(i + 1))
 
             c.showPage()
 
-        # 🟢 hoja final
+        # 🟢 HOJA FINAL
         c.drawImage(plantilla, 0, 0, width=width, height=height)
 
         c.setFont("Helvetica-Bold", 14)
@@ -78,7 +72,7 @@ def generar():
             download_name=nombre + ".pdf"
         )
 
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
         return "Error interno al generar PDF", 500
 
