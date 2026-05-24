@@ -53,7 +53,7 @@ body {
     font-size: 16px;
 }
 
-/* 📸 FULLSCREEN */
+/* CAMARA */
 #camaraFull {
     position: fixed;
     top: 0;
@@ -99,7 +99,7 @@ body {
     color: white;
 }
 
-/* 🟢 BOTÓN PDF */
+/* BOTÓN PDF */
 #btnGenerarPDF {
     padding: 15px 25px;
     background: green;
@@ -115,12 +115,12 @@ body {
 
 <div id="contenedor"></div>
 
-<!-- 🟢 BOTÓN PDF -->
+<!-- BOTÓN PDF -->
 <div style="text-align:center; margin:20px;">
     <button id="btnGenerarPDF">Generar PDF</button>
 </div>
 
-<!-- 📸 CAMARA -->
+<!-- CAMARA -->
 <div id="camaraFull">
     <video id="video" autoplay playsinline></video>
     <p id="loadingCam">Cargando cámara...</p>
@@ -129,6 +129,7 @@ body {
 </div>
 
 <script>
+
 let fotos = [];
 let hojaActual = null;
 let stream = null;
@@ -186,25 +187,36 @@ function abrirCamara() {
     .catch(err => alert("Error cámara: " + err));
 }
 
-// 📸 TOMAR FOTO
+// 📸 TOMAR FOTO (CORREGIDO)
 document.getElementById("btnFoto").onclick = () => {
 
     let video = document.getElementById("video");
+
+    if (!video.videoWidth) {
+        alert("Espera a que cargue la cámara");
+        return;
+    }
 
     let canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    canvas.getContext("2d").drawImage(video, 0, 0);
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
 
+    let base64 = canvas.toDataURL("image/png");
+
+    // mostrar en pantalla
     let img = document.createElement("img");
-    img.src = canvas.toDataURL("image/png");
+    img.src = base64;
     img.style.width = "100%";
 
     hojaActual.querySelector(".foto-area").innerHTML = "";
     hojaActual.querySelector(".foto-area").appendChild(img);
 
-    fotos.push(img.src);
+    // 🔥 GUARDADO SEGURO
+    fotos.push(base64);
+    console.log("Fotos guardadas:", fotos.length);
 
     cerrarCamara();
 
@@ -259,6 +271,7 @@ document.getElementById("btnGenerarPDF").onclick = () => {
 
 // INICIO
 window.onload = () => agregarHoja();
+
 </script>
 
 </body>

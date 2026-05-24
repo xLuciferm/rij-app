@@ -29,20 +29,26 @@ def generar():
 
     for i, foto in enumerate(fotos):
 
-        c.drawImage(plantilla, 0, 0, width=width, height=height)
+    c.drawImage(plantilla, 0, 0, width=width, height=height)
 
-        img_data = base64.b64decode(foto.split(",")[1])
-        img = ImageReader(BytesIO(img_data))
+    img_data = base64.b64decode(foto.split(",")[1])
+    img = ImageReader(BytesIO(img_data))
 
-        x = (width - img_width) / 2
-        y = (height - img_height) / 2
+    img_width = 400
+    img_height = 250
 
-        c.drawImage(img, x, y, width=img_width, height=img_height)
+    # 🎯 CENTRADO HORIZONTAL
+    x = (width - img_width) / 2
 
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(500, 750, str(i + 1))
+    # 📉 MÁS ABAJO (AJUSTE PRINCIPAL)
+    y = 180
 
-        c.showPage()
+    c.drawImage(img, x, y, width=img_width, height=img_height)
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(500, 750, str(i + 1))
+
+    c.showPage()
 
     c.drawImage(plantilla, 0, 0, width=width, height=height)
 
