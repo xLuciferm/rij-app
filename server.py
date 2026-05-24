@@ -23,10 +23,9 @@ def generar():
 
         buffer = BytesIO()
         c = canvas.Canvas(buffer, pagesize=letter)
-
         width, height = letter
 
-        for i, hoja in enumerate(hojas):
+        for hoja in hojas:
 
             c.setFillColorRGB(1,1,1)
             c.rect(0,0,width,height,fill=1)
@@ -62,20 +61,19 @@ def generar():
                 img_w = 200
                 img_h = 150
 
-                start_x = 60
-                start_y = height-header_h-20
+                x0 = 60
+                y0 = height-header_h-20
 
-                x = start_x
-                y = start_y
+                x = x0
+                y = y0
 
                 for j, foto in enumerate(fotos):
 
                     img = ImageReader(BytesIO(base64.b64decode(foto.split(",")[1])))
-
                     c.drawImage(img, x, y-img_h, img_w, img_h)
 
                     if (j+1) % cols == 0:
-                        x = start_x
+                        x = x0
                         y -= img_h + gap
                     else:
                         x += img_w + gap
@@ -85,11 +83,13 @@ def generar():
         c.save()
         buffer.seek(0)
 
+        # 🔥 IMPORTANTE PARA MÓVIL
         return send_file(
             buffer,
             mimetype="application/pdf",
             as_attachment=True,
-            download_name=f"{nombre}.pdf"
+            download_name=f"{nombre}.pdf",
+            conditional=False
         )
 
     except Exception:
