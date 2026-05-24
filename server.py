@@ -18,42 +18,36 @@ def generar():
     data = request.json
     fotos = data["fotos"]
     cantidad = data["cantidad"]
+    nombre = data.get("nombre", "RIJ_CFE")
 
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
 
     width, height = letter
 
-    # 🟢 CARGAR PLANTILLA DE FORMA SEGURA
     ruta = os.path.join(os.path.dirname(__file__), "plantilla.jpg")
     plantilla = ImageReader(ruta)
 
     img_width = 400
     img_height = 250
 
-    # 🔥 FOR CORRECTO (INDENTACIÓN ARREGLADA)
     for i, foto in enumerate(fotos):
 
-        # fondo
         c.drawImage(plantilla, 0, 0, width=width, height=height)
 
-        # imagen base64
         img_data = base64.b64decode(foto.split(",")[1])
         img = ImageReader(BytesIO(img_data))
 
-        # posición centrada y más abajo
         x = (width - img_width) / 2
         y = 180
 
         c.drawImage(img, x, y, width=img_width, height=img_height)
 
-        # número de hoja
         c.setFont("Helvetica-Bold", 12)
         c.drawString(500, 750, str(i + 1))
 
         c.showPage()
 
-    # 🟢 HOJA FINAL
     c.drawImage(plantilla, 0, 0, width=width, height=height)
 
     c.setFont("Helvetica-Bold", 14)
@@ -63,7 +57,7 @@ def generar():
     c.save()
     buffer.seek(0)
 
-    return send_file(buffer, as_attachment=True, download_name="RIJ_CFE.pdf")
+    return send_file(buffer, as_attachment=True, download_name=nombre + ".pdf")
 
 
 if __name__ == "__main__":

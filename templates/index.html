@@ -115,7 +115,6 @@ body {
 
 <div id="contenedor"></div>
 
-<!-- BOTÓN PDF -->
 <div style="text-align:center; margin:20px;">
     <button id="btnGenerarPDF">Generar PDF</button>
 </div>
@@ -134,7 +133,7 @@ let fotos = [];
 let hojaActual = null;
 let stream = null;
 
-// 📄 HOJA
+// HOJA
 function crearHoja(numero) {
     let hoja = document.createElement("div");
     hoja.className = "hoja";
@@ -160,7 +159,7 @@ function crearHoja(numero) {
     return hoja;
 }
 
-// 📸 CAMARA
+// CAMARA
 function abrirCamara() {
     let camara = document.getElementById("camaraFull");
     let video = document.getElementById("video");
@@ -184,29 +183,22 @@ function abrirCamara() {
             loading.style.display = "none";
         };
     })
-    .catch(err => alert("Error cámara: " + err));
+    .catch(err => alert(err));
 }
 
-// 📸 TOMAR FOTO (CORREGIDO)
+// TOMAR FOTO
 document.getElementById("btnFoto").onclick = () => {
 
     let video = document.getElementById("video");
-
-    if (!video.videoWidth) {
-        alert("Espera a que cargue la cámara");
-        return;
-    }
 
     let canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    let ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
+    canvas.getContext("2d").drawImage(video, 0, 0);
 
     let base64 = canvas.toDataURL("image/png");
 
-    // mostrar en pantalla
     let img = document.createElement("img");
     img.src = base64;
     img.style.width = "100%";
@@ -214,9 +206,7 @@ document.getElementById("btnFoto").onclick = () => {
     hojaActual.querySelector(".foto-area").innerHTML = "";
     hojaActual.querySelector(".foto-area").appendChild(img);
 
-    // 🔥 GUARDADO SEGURO
     fotos.push(base64);
-    console.log("Fotos guardadas:", fotos.length);
 
     cerrarCamara();
 
@@ -225,7 +215,7 @@ document.getElementById("btnFoto").onclick = () => {
     }
 };
 
-// ❌ CERRAR CAMARA
+// CERRAR CAMARA
 document.getElementById("btnCerrar").onclick = cerrarCamara;
 
 function cerrarCamara() {
@@ -237,13 +227,13 @@ function cerrarCamara() {
     }
 }
 
-// ➕ HOJAS
+// HOJAS
 function agregarHoja() {
     let num = document.querySelectorAll(".hoja").length + 1;
     document.getElementById("contenedor").appendChild(crearHoja(num));
 }
 
-// 🟢 GENERAR PDF
+// PDF
 document.getElementById("btnGenerarPDF").onclick = () => {
 
     if (fotos.length === 0) {
@@ -251,12 +241,17 @@ document.getElementById("btnGenerarPDF").onclick = () => {
         return;
     }
 
+    let nombre = prompt("¿Cómo quieres guardar el PDF?", "RIJ_CFE");
+
+    if (!nombre) return;
+
     fetch("/generar", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
             fotos: fotos,
-            cantidad: fotos.length
+            cantidad: fotos.length,
+            nombre: nombre
         })
     })
     .then(res => res.blob())
@@ -264,7 +259,7 @@ document.getElementById("btnGenerarPDF").onclick = () => {
         let url = URL.createObjectURL(blob);
         let a = document.createElement("a");
         a.href = url;
-        a.download = "RIJ_CFE.pdf";
+        a.download = nombre + ".pdf";
         a.click();
     });
 };
