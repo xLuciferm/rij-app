@@ -71,7 +71,6 @@ body {
     object-fit: cover;
 }
 
-/* 📸 BOTÓN TOMAR FOTO */
 #btnFoto {
     position: absolute;
     bottom: 30px;
@@ -84,7 +83,6 @@ body {
     border: none;
 }
 
-/* ❌ BOTÓN CERRAR */
 #btnCerrar {
     position: absolute;
     top: 20px;
@@ -93,13 +91,22 @@ body {
     padding: 10px;
 }
 
-/* ⏳ LOADING */
 #loadingCam {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
+}
+
+/* 🟢 BOTÓN PDF */
+#btnGenerarPDF {
+    padding: 15px 25px;
+    background: green;
+    color: white;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
 }
 </style>
 
@@ -108,7 +115,12 @@ body {
 
 <div id="contenedor"></div>
 
-<!-- 📸 CAMARA FULLSCREEN -->
+<!-- 🟢 BOTÓN PDF -->
+<div style="text-align:center; margin:20px;">
+    <button id="btnGenerarPDF">Generar PDF</button>
+</div>
+
+<!-- 📸 CAMARA -->
 <div id="camaraFull">
     <video id="video" autoplay playsinline></video>
     <p id="loadingCam">Cargando cámara...</p>
@@ -121,7 +133,7 @@ let fotos = [];
 let hojaActual = null;
 let stream = null;
 
-// 📄 CREAR HOJA
+// 📄 HOJA
 function crearHoja(numero) {
     let hoja = document.createElement("div");
     hoja.className = "hoja";
@@ -139,9 +151,7 @@ function crearHoja(numero) {
         <div class="footer"></div>
     `;
 
-    let btn = hoja.querySelector(".boton-agregar");
-
-    btn.onclick = () => {
+    hoja.querySelector(".boton-agregar").onclick = () => {
         hojaActual = hoja;
         abrirCamara();
     };
@@ -149,7 +159,7 @@ function crearHoja(numero) {
     return hoja;
 }
 
-// 📸 ABRIR CAMARA
+// 📸 CAMARA
 function abrirCamara() {
     let camara = document.getElementById("camaraFull");
     let video = document.getElementById("video");
@@ -169,8 +179,6 @@ function abrirCamara() {
 
         video.onloadedmetadata = () => {
             video.play();
-
-            // 🔥 YA ESTÁ LISTA
             btnFoto.disabled = false;
             loading.style.display = "none";
         };
@@ -183,11 +191,6 @@ document.getElementById("btnFoto").onclick = () => {
 
     let video = document.getElementById("video");
 
-    if (!video.videoWidth) {
-        alert("Espera a que la cámara cargue");
-        return;
-    }
-
     let canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -198,9 +201,8 @@ document.getElementById("btnFoto").onclick = () => {
     img.src = canvas.toDataURL("image/png");
     img.style.width = "100%";
 
-    let area = hojaActual.querySelector(".foto-area");
-    area.innerHTML = "";
-    area.appendChild(img);
+    hojaActual.querySelector(".foto-area").innerHTML = "";
+    hojaActual.querySelector(".foto-area").appendChild(img);
 
     fotos.push(img.src);
 
@@ -211,35 +213,52 @@ document.getElementById("btnFoto").onclick = () => {
     }
 };
 
-// ❌ CERRAR CAMARA (NO GUARDA)
+// ❌ CERRAR CAMARA
 document.getElementById("btnCerrar").onclick = cerrarCamara;
 
 function cerrarCamara() {
-    let camara = document.getElementById("camaraFull");
-    let video = document.getElementById("video");
-
-    camara.style.display = "none";
+    document.getElementById("camaraFull").style.display = "none";
 
     if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach(t => t.stop());
         stream = null;
     }
-
-    // 🔥 limpiar completamente
-    video.srcObject = null;
-    video.src = "";
 }
 
-// ➕ AGREGAR HOJA
+// ➕ HOJAS
 function agregarHoja() {
-    let numero = document.querySelectorAll(".hoja").length + 1;
-    document.getElementById("contenedor").appendChild(crearHoja(numero));
+    let num = document.querySelectorAll(".hoja").length + 1;
+    document.getElementById("contenedor").appendChild(crearHoja(num));
 }
+
+// 🟢 GENERAR PDF
+document.getElementById("btnGenerarPDF").onclick = () => {
+
+    if (fotos.length === 0) {
+        alert("No hay fotos");
+        return;
+    }
+
+    fetch("/generar", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            fotos: fotos,
+            cantidad: fotos.length
+        })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+        let url = URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "RIJ_CFE.pdf";
+        a.click();
+    });
+};
 
 // INICIO
-window.onload = () => {
-    agregarHoja();
-};
+window.onload = () => agregarHoja();
 </script>
 
 </body>

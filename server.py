@@ -22,35 +22,28 @@ def generar():
 
     width, height = letter
 
-    # 🟢 PLANTILLA
     plantilla = ImageReader("plantilla.jpg")
 
-    # 🟢 TAMAÑO FOTO (puedes cambiarlo si quieres)
     img_width = 400
     img_height = 250
 
     for i, foto in enumerate(fotos):
 
-        # 📄 fondo
         c.drawImage(plantilla, 0, 0, width=width, height=height)
 
-        # 📸 imagen base64
         img_data = base64.b64decode(foto.split(",")[1])
         img = ImageReader(BytesIO(img_data))
 
-        # 🎯 CENTRAR FOTO
         x = (width - img_width) / 2
         y = (height - img_height) / 2
 
         c.drawImage(img, x, y, width=img_width, height=img_height)
 
-        # 🔢 número de hoja
         c.setFont("Helvetica-Bold", 12)
         c.drawString(500, 750, str(i + 1))
 
         c.showPage()
 
-    # 🟢 HOJA FINAL
     c.drawImage(plantilla, 0, 0, width=width, height=height)
 
     c.setFont("Helvetica-Bold", 14)
@@ -64,4 +57,4 @@ def generar():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
