@@ -330,23 +330,20 @@ function generarPDF() {
     .then(res => res.blob())
     .then(blob => {
 
-        const url = URL.createObjectURL(blob);
+        const fileName = "RIJ_CFE.pdf";
+        const file = new File([blob], fileName, { type: "application/pdf" });
+
+        const url = URL.createObjectURL(file);
 
         const a = document.createElement("a");
         a.href = url;
-
-        // 📱 clave para celular
-        a.target = "_blank";
-
-        // nombre del archivo
-        a.download = "RIJ_CFE.pdf";
+        a.download = fileName;
 
         document.body.appendChild(a);
         a.click();
         a.remove();
 
-        // limpiar memoria
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
     });
 }
 
