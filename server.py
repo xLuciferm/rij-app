@@ -25,7 +25,6 @@ def generar():
         c = canvas.Canvas(buffer, pagesize=letter)
 
         width, height = letter
-        total = len(hojas)
 
         for i, hoja in enumerate(hojas):
 
@@ -48,16 +47,16 @@ def generar():
                 iw, ih = img.getSize()
                 scale = min((width-80)/iw,(height-header_h-120)/ih)
 
-                w,h = iw*scale, ih*scale
+                w, h = iw*scale, ih*scale
 
                 x = (width-w)/2
                 y = (height-header_h-h)/2
 
-                c.drawImage(img,x,y,w,h)
+                c.drawImage(img, x, y, w, h)
 
             else:
 
-                cols = 2 if len(fotos)<=6 else 3
+                cols = 2 if len(fotos) <= 6 else 3
                 gap = 12
 
                 img_w = 200
@@ -66,34 +65,36 @@ def generar():
                 start_x = 60
                 start_y = height-header_h-20
 
-                x=start_x
-                y=start_y
+                x = start_x
+                y = start_y
 
-                for j,foto in enumerate(fotos):
+                for j, foto in enumerate(fotos):
 
                     img = ImageReader(BytesIO(base64.b64decode(foto.split(",")[1])))
 
-                    c.drawImage(img,x,y-img_h,img_w,img_h)
+                    c.drawImage(img, x, y-img_h, img_w, img_h)
 
-                    if (j+1)%cols==0:
-                        x=start_x
-                        y-=img_h+gap
+                    if (j+1) % cols == 0:
+                        x = start_x
+                        y -= img_h + gap
                     else:
-                        x+=img_w+gap
+                        x += img_w + gap
 
             c.showPage()
 
         c.save()
         buffer.seek(0)
 
-        return send_file(buffer,
-                         mimetype="application/pdf",
-                         as_attachment=True,
-                         download_name=nombre+".pdf")
+        return send_file(
+            buffer,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=f"{nombre}.pdf"
+        )
 
     except Exception:
         traceback.print_exc()
-        return "Error",500
+        return "Error", 500
 
 
 if __name__ == "__main__":

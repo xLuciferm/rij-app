@@ -330,27 +330,28 @@ function generarPDF() {
     .then(response => response.blob())
     .then(blob => {
 
-        // 🔥 CREAR ARCHIVO REAL
-        const file = new File([blob], "RIJ_CFE.pdf", {
-            type: "application/pdf"
-        });
+        const url = URL.createObjectURL(blob);
 
-        const url = URL.createObjectURL(file);
+        // 🔥 Detectar móvil
+        const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-        const a = document.createElement("a");
-        a.href = url;
+        if (esMovil) {
 
-        // 🔥 IMPORTANTE: forzar descarga real
-        a.setAttribute("download", file.name);
-        a.style.display = "none";
+            // 📱 EN MÓVIL: abrir PDF (permite guardar desde visor del sistema)
+            window.open(url, "_blank");
 
-        document.body.appendChild(a);
-        a.click();
+        } else {
 
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 1000);
+            // 💻 EN PC: descarga normal
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "RIJ_CFE.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
     });
 }
 
