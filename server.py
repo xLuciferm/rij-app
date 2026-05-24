@@ -19,36 +19,33 @@ def generar():
     try:
         data = request.json
 
-        fotos = data.get("fotos", [])
+        hojas = data.get("hojas", [])
         nombre = data.get("nombre", "RIJ_CFE")
 
-        print("📌 TOTAL FOTOS:", len(fotos))
-
-        if not fotos:
+        if not hojas:
             return "No hay fotos", 400
 
         buffer = BytesIO()
         c = canvas.Canvas(buffer, pagesize=letter)
 
         width, height = letter
+        total_hojas = len(hojas)
 
-        img_width = 380
-        img_height = 260
+        for i, hoja in enumerate(hojas):
 
-        total = len(fotos)
-
-        # =========================
-        # 📄 PAGINAS DE FOTOS
-        # =========================
-        for i, foto in enumerate(fotos):
-
-            # fondo blanco
+            # =========================
+            # FONDO
+            # =========================
             c.setFillColorRGB(1, 1, 1)
             c.rect(0, 0, width, height, fill=1)
 
-            # encabezado verde CFE
+            # =========================
+            # HEADER
+            # =========================
+            header_h = 80
+
             c.setFillColorRGB(0, 0.5, 0.2)
-            c.rect(0, height-80, width, 80, fill=1)
+            c.rect(0, height-header_h, width, header_h, fill=1)
 
             c.setFillColorRGB(1, 1, 1)
             c.setFont("Helvetica-Bold", 14)
@@ -56,31 +53,126 @@ def generar():
             c.setFont("Helvetica", 11)
             c.drawString(30, height-60, "REUNIÓN DE INICIO DE JORNADA - RIJ")
 
-            # numeración
             c.setFillColorRGB(0, 0, 0)
             c.setFont("Helvetica-Bold", 10)
-            c.drawString(520, height-40, f"{i+1}/{total}")
+            c.drawString(520, height-40, f"{i+1}/{total_hojas}")
 
-            # =========================
-            # 📸 IMAGEN CENTRADA
-            # =========================
-            try:
+            total_imgs = len(hoja)
+
+            # ======================================================
+            # 📌 UNA IMAGEN (más grande + mejor proporción)
+            # ======================================================
+            if total_imgs == 1:
+
+                foto = hoja[0]
+
                 if foto and "," in foto:
 
                     img_data = base64.b64decode(foto.split(",")[1])
                     img = ImageReader(BytesIO(img_data))
 
-                    x = (width - img_width) / 2
-                    y = (height - img_height) / 2
+                    margin_x = 40
+                    margin_bottom = 70
+                    margin_top = header_h + 10
 
-                    c.drawImage(img, x, y, width=img_width, height=img_height)
+                    max_w = width - (margin_x * 2)
+                    max_h = height - margin_top - margin_bottom
 
-            except Exception as e:
-                print("❌ Error imagen:", e)
+                    iw, ih = img.getSize()
 
-            # pie de página
+                    scale = min(max_w / iw, max_h / ih)
+
+                    img_w = iw * scale
+                    img_h = ih * scale
+
+                    x = (width - img_w) / 2
+                    y = (height - margin_top - img_h) / 2 + 10  # 👈 un poco más arriba
+
+                    c.drawImage(img, x, y, width=img_w, height=img_h)
+
+            # ======================================================
+            # 📌 VARIAS IMÁGENES (MEJOR DISTRIBUIDO + MÁS ARRIBA)
+            # ======================================================
+            else:
+
+                total_imgs = len(hoja)
+
+                # columnas más estables
+                if total_imgs <= 4:
+                    cols = 2
+                else:
+                    cols = 3
+
+                gap = 12
+
+                # tamaños MÁS PROPORCIONALES (menos “cuadro aplastado”)
+                if total_imgs <= 4:
+                    img_w, img_h = 250, 190
+                elif total_imgs <= 6:
+                    img_w, img_h = 210, 160
+                else:
+                    img_w, img_h = 190, 140
+
+                rows = (total_imgs + cols - 1) // cols
+
+                grid_width = cols * img_w + (cols - 1) * gap
+                grid_height = rows * img_h + (rows - 1) * gap
+
+                header_space = header_h + 15
+                footer_space = 50
+
+                max_height = height - header_space - footer_space
+
+                # SOLO ajusta si se pasa
+                if grid_height > max_height:
+                    scale = max_height / grid_height
+                    img_w *= scale
+                    img_h *= scale
+
+                    grid_width = cols * img_w + (cols - 1) * gap
+                    grid_height = rows * img_h + (rows - 1) * gap
+
+                # =========================
+                # 🔥 AJUSTE IMPORTANTE (SUBIR GRID)
+                # =========================
+                start_x = (width - grid_width) / 2
+
+                # 👇 más arriba que antes (menos centrado vertical)
+                start_y = height - header_space - 20
+
+                x = start_x
+                y = start_y
+
+                for j, foto in enumerate(hoja):
+
+                    try:
+                        if foto and "," in foto:
+
+                            img_data = base64.b64decode(foto.split(",")[1])
+                            img = ImageReader(BytesIO(img_data))
+
+                            c.drawImage(
+                                img,
+                                x,
+                                y - img_h,
+                                width=img_w,
+                                height=img_h
+                            )
+
+                            if (j + 1) % cols == 0:
+                                x = start_x
+                                y -= img_h + gap
+                            else:
+                                x += img_w + gap
+
+                    except Exception as e:
+                        print("❌ Error imagen:", e)
+
+            # =========================
+            # FOOTER
+            # =========================
             c.setFont("Helvetica", 9)
-            c.drawString(30, 50, f"Página {i+1} de {total} - RIJ Sistema")
+            c.drawString(30, 50, f"Página {i+1} de {total_hojas} - RIJ Sistema")
 
             c.showPage()
 
@@ -95,7 +187,7 @@ def generar():
         )
 
     except Exception as e:
-        print("🔥 ERROR REAL:")
+        print("🔥 ERROR:")
         traceback.print_exc()
         return str(e), 500
 

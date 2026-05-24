@@ -10,16 +10,15 @@ body {
     background: #f0f0f0;
 }
 
-/* 📄 HOJA */
+/* HOJA */
 .hoja {
     width: 600px;
-    height: 800px;
+    min-height: 800px;
     background: white;
     margin: 20px auto;
     padding: 20px;
 }
 
-/* HEADER */
 .header {
     background: #0a7a3d;
     color: white;
@@ -28,23 +27,40 @@ body {
     justify-content: space-between;
 }
 
-/* 📸 RECUADRO */
+/* AREA */
 .foto-area {
     border: 2px dashed gray;
     width: 80%;
-    height: 300px;
-    margin: 80px auto 10px auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    min-height: 300px;
+    margin: 30px auto 10px auto;
+    padding: 10px;
 }
 
-/* 👇 IMAGEN DENTRO DEL RECUADRO */
-.foto-area img {
+.foto-area.dragover {
+    background: #e6f7ff;
+    border: 2px dashed #007bff;
+}
+
+/* GRID */
+.galeria {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.galeria img {
     width: 100%;
-    height: 100%;
+    height: 160px;
     object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.galeria img:hover {
+    transform: scale(1.03);
+    opacity: 0.8;
 }
 
 /* BOTONES */
@@ -61,11 +77,45 @@ body {
 .gris { background: #555; }
 .verde { background: green; }
 
-/* 📌 BOTONES INFERIORES CENTRADOS */
 .panel-hoja {
     text-align: center;
     margin-top: 15px;
 }
+
+/* MODAL */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 260px;
+    text-align: center;
+}
+
+.modal button {
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.btn-cambiar { background: #007bff; color: white; }
+.btn-eliminar { background: #dc3545; color: white; }
+.btn-cerrar { background: #555; color: white; }
 </style>
 
 </head>
@@ -74,10 +124,21 @@ body {
 
 <div id="contenedor"></div>
 
+<!-- MODAL -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h4>Opciones</h4>
+
+        <button class="btn-cambiar" onclick="cambiarImagen()">✏️ Cambiar imagen</button>
+        <button class="btn-eliminar" onclick="eliminarImagen()">🗑 Eliminar imagen</button>
+        <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div>
+</div>
+
 <script>
 
-let hojaActual = null;
-let fotos = [];
+let imagenSeleccionada = null;
+let hojaSeleccionada = null;
 
 /* =========================
    HOJA
@@ -86,6 +147,7 @@ function crearHoja(numero) {
 
     let hoja = document.createElement("div");
     hoja.className = "hoja";
+    hoja.fotos = [];
 
     hoja.innerHTML = `
         <div class="header">
@@ -96,59 +158,87 @@ function crearHoja(numero) {
         <div class="foto-area">
             <div style="text-align:center;">
                 <div style="margin-bottom:10px;font-size:12px;">
-                    Arrastra o pega imagen (Ctrl + V)
+                    📎 Subir / Arrastrar / Pegar imágenes
                 </div>
 
-                <button class="boton azul">📸 Tomar foto</button>
-                <button class="boton gris">📎 Subir imagen</button>
+                <button class="boton gris" id="btnSubir">📎 Subir imagen</button>
             </div>
+
+            <div class="galeria"></div>
         </div>
 
         <div class="panel-hoja">
-            <button class="boton verde">➕ Agregar hoja</button>
-            <button class="boton azul">📄 Generar PDF</button>
+            <button class="boton verde" id="btnAgregar">➕ Agregar hoja</button>
+            <button class="boton azul" id="btnPDF">📄 Generar PDF</button>
         </div>
     `;
 
     let area = hoja.querySelector(".foto-area");
+    let galeria = hoja.querySelector(".galeria");
 
-    let btnCam = hoja.querySelectorAll(".boton")[0];
-    let btnSubir = hoja.querySelectorAll(".boton")[1];
-    let btnAgregar = hoja.querySelectorAll(".panel-hoja button")[0];
-    let btnPDF = hoja.querySelectorAll(".panel-hoja button")[1];
+    let btnSubir = hoja.querySelector("#btnSubir");
+    let btnAgregar = hoja.querySelector("#btnAgregar");
+    let btnPDF = hoja.querySelector("#btnPDF");
 
-    // ➕ hoja
+    /* =========================
+       BOTONES FIJOS (CORREGIDO)
+    ========================= */
     btnAgregar.onclick = agregarHoja;
-
-    // 📄 PDF
     btnPDF.onclick = generarPDF;
 
-    // 📸 cámara
-    btnCam.onclick = () => {
-        hojaActual = area;
-        abrirCamara();
-    };
-
-    // 📁 subir imagen
+    /* SUBIR IMAGEN */
     btnSubir.onclick = () => {
         let input = document.createElement("input");
         input.type = "file";
         input.accept = "image/*";
+        input.multiple = true;
 
         input.onchange = e => {
-            cargarImagen(e.target.files[0], area);
+            [...e.target.files].forEach(file => {
+                cargarImagen(file, hoja, galeria);
+            });
         };
 
         input.click();
     };
 
+    /* PEGAR */
+    area.addEventListener("paste", e => {
+        for (let item of e.clipboardData.items) {
+            if (item.type.includes("image")) {
+                cargarImagen(item.getAsFile(), hoja, galeria);
+            }
+        }
+    });
+
+    /* DRAG & DROP */
+    area.addEventListener("dragover", e => {
+        e.preventDefault();
+        area.classList.add("dragover");
+    });
+
+    area.addEventListener("dragleave", () => {
+        area.classList.remove("dragover");
+    });
+
+    area.addEventListener("drop", e => {
+        e.preventDefault();
+        area.classList.remove("dragover");
+
+        [...e.dataTransfer.files].forEach(file => {
+            if (file.type.includes("image")) {
+                cargarImagen(file, hoja, galeria);
+            }
+        });
+    });
+
     return hoja;
 }
 
 /* =========================
-   SUBIR IMAGEN (🔥 FALTABA ESTO)
+   IMAGEN
 ========================= */
-function cargarImagen(file, area) {
+function cargarImagen(file, hoja, galeria) {
 
     let reader = new FileReader();
 
@@ -157,13 +247,65 @@ function cargarImagen(file, area) {
         let img = document.createElement("img");
         img.src = e.target.result;
 
-        area.innerHTML = "";
-        area.appendChild(img);
+        img.onclick = () => {
+            imagenSeleccionada = img;
+            hojaSeleccionada = hoja;
+            document.getElementById("modal").style.display = "flex";
+        };
 
-        fotos.push(e.target.result);
+        galeria.appendChild(img);
+        hoja.fotos.push(e.target.result);
     };
 
     reader.readAsDataURL(file);
+}
+
+/* =========================
+   MODAL
+========================= */
+function cerrarModal() {
+    document.getElementById("modal").style.display = "none";
+}
+
+function eliminarImagen() {
+    if (imagenSeleccionada) {
+        let src = imagenSeleccionada.src;
+        imagenSeleccionada.remove();
+        hojaSeleccionada.fotos =
+            hojaSeleccionada.fotos.filter(f => f !== src);
+    }
+    cerrarModal();
+}
+
+function cambiarImagen() {
+
+    let input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = e => {
+
+        let file = e.target.files[0];
+        let reader = new FileReader();
+
+        reader.onload = ev => {
+
+            let newImg = ev.target.result;
+            let oldSrc = imagenSeleccionada.src;
+
+            hojaSeleccionada.fotos =
+                hojaSeleccionada.fotos.map(f =>
+                    f === oldSrc ? newImg : f
+                );
+
+            imagenSeleccionada.src = newImg;
+        };
+
+        reader.readAsDataURL(file);
+    };
+
+    input.click();
+    cerrarModal();
 }
 
 /* =========================
@@ -175,15 +317,18 @@ function agregarHoja() {
 }
 
 /* =========================
-   PDF
+   PDF (ARREGLADO Y FUNCIONAL)
 ========================= */
 function generarPDF() {
+
+    let hojas = [...document.querySelectorAll(".hoja")]
+        .map(h => h.fotos || []);
+
     fetch("/generar", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
-            fotos: fotos,
-            cantidad: fotos.length,
+            hojas: hojas,
             nombre: "RIJ_CFE"
         })
     })
