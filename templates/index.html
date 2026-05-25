@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>RIJ PRO</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #f0f0f0;
+}
+
+/* HOJA */
+.hoja {
+    width: 600px;
+    min-height: 800px;
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.header {
+    background: #0a7a3d;
+    color: white;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ÁREA IMÁGENES */
+.foto-area {
+    border: 2px dashed gray;
+    width: 80%;
+    min-height: 300px;
+    margin: 30px auto 10px auto;
+    padding: 10px;
+    transition: 0.2s;
+}
+
+.foto-area.dragover {
+    background: #e6f7ff;
+    border: 2px dashed #007bff;
+}
+
+/* GRID */
+.galeria {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.galeria img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* BOTONES */
+.boton {
+    padding: 10px 15px;
+    margin: 5px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    border-radius: 5px;
+}
+
+.azul { background: #007bff; }
+.gris { background: #555; }
+.verde { background: green; }
+.rojo { background: #dc3545; } /* 🔴 NUEVO COLOR */
+
+/* PANEL */
+.panel-hoja {
+    text-align: center;
+    margin-top: 15px;
+}
+
+/* MODAL */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 260px;
+    text-align: center;
+}
+
+.modal button {
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.btn-cambiar { background: #007bff; color: white; }
+.btn-eliminar { background: #dc3545; color: white; }
+.btn-cerrar { background: #555; color: white; }
+</style>
+
+</head>
+
+<body>
+
+<div id="contenedor"></div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h4>Opciones</h4>
+
+        <button class="btn-cambiar" onclick="cambiarImagen()">✏️ Cambiar imagen</button>
+        <button class="btn-eliminar" onclick="eliminarImagen()">🗑 Eliminar imagen</button>
+        <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div>
+</div>
+
+<script>
+
+let imagenSeleccionada = null;
+let hojaSeleccionada = null;
+
+/* =========================
+   HOJA
+========================= */
+function crearHoja(numero) {
+
+    let hoja = document.createElement("div");
+    hoja.className = "hoja";
+    hoja.fotos = [];
+
+    hoja.innerHTML = `
+        <div class="header">
+            <span>REUNIÓN RIJ</span>
+            <span>Hoja ${numero}</span>
+        </div>
+
+        <div class="foto-area">
+            <div style="text-align:center;">
+                <div style="margin-bottom:10px;font-size:12px;">
+                    📎 Subir imagen o arrastrar aquí
+                </div>
+
+                <button class="boton gris btnSubir">📎 Subir imagen</button>
+            </div>
+
+            <div class="galeria"></div>
+        </div>
+
+        <div class="panel-hoja">
+
+            <!-- 🔴 ORDEN CORRECTO -->
+            <button class="boton verde btnAdd">➕ Agregar hoja</button>
+            <button class="boton rojo btnDel">🗑 Eliminar hoja</button>
+            <button class="boton azul btnPDF">📄 Generar PDF</button>
+
+        </div>
+    `;
+
+    let area = hoja.querySelector(".foto-area");
+    let galeria = hoja.querySelector(".galeria");
+
+    let btnSubir = hoja.querySelector(".btnSubir");
+    let btnAdd = hoja.querySelector(".btnAdd");
+    let btnPDF = hoja.querySelector(".btnPDF");
+    let btnDel = hoja.querySelector(".btnDel");
+
+    /* SUBIR */
+    btnSubir.onclick = () => {
+        let input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.multiple = true;
+
+        input.onchange = e => {
+            [...e.target.files].forEach(file => {
+                cargarImagen(file, hoja, galeria);
+            });
+        };
+
+        input.click();
+    };
+
+    /* AGREGAR */
+    btnAdd.onclick = () => agregarHoja();
+
+    /* PDF */
+    btnPDF.onclick = () => generarPDF();
+
+    /* ELIMINAR */
+    btnDel.onclick = () => eliminarHoja(hoja);
+
+    /* DRAG */
+    area.addEventListener("dragover", e => {
+        e.preventDefault();
+        area.classList.add("dragover");
+    });
+
+    area.addEventListener("dragleave", () => {
+        area.classList.remove("dragover");
+    });
+
+    area.addEventListener("drop", e => {
+        e.preventDefault();
+        area.classList.remove("dragover");
+
+        [...e.dataTransfer.files].forEach(file => {
+            if (file.type.includes("image")) {
+                cargarImagen(file, hoja, galeria);
+            }
+        });
+    });
+
+    /* PEGAR */
+    area.addEventListener("paste", e => {
+        for (let item of e.clipboardData.items) {
+            if (item.type.includes("image")) {
+                cargarImagen(item.getAsFile(), hoja, galeria);
+            }
+        }
+    });
+
+    return hoja;
+}
+
+/* =========================
+   IMAGEN
+========================= */
+function cargarImagen(file, hoja, galeria) {
+
+    let reader = new FileReader();
+
+    reader.onload = e => {
+
+        let img = document.createElement("img");
+        img.src = e.target.result;
+
+        img.onclick = () => {
+            imagenSeleccionada = img;
+            hojaSeleccionada = hoja;
+            document.getElementById("modal").style.display = "flex";
+        };
+
+        galeria.appendChild(img);
+        hoja.fotos.push(e.target.result);
+    };
+
+    reader.readAsDataURL(file);
+}
+
+/* =========================
+   HOJAS
+========================= */
+function agregarHoja() {
+    let cont = document.getElementById("contenedor");
+
+    let n = document.querySelectorAll(".hoja").length + 1;
+
+    cont.appendChild(crearHoja(n));
+
+    renumerarHojas();
+}
+
+function eliminarHoja(hoja) {
+    hoja.remove();
+    renumerarHojas();
+}
+
+/* =========================
+   REGLAS UI
+========================= */
+function renumerarHojas() {
+
+    let hojas = document.querySelectorAll(".hoja");
+
+    hojas.forEach((h, i) => {
+
+        let titulo = h.querySelector(".header span:last-child");
+        if (titulo) titulo.textContent = "Hoja " + (i + 1);
+
+        let btnDel = h.querySelector(".btnDel");
+        if (btnDel) btnDel.style.display = (i === 0) ? "none" : "inline-block";
+    });
+
+    hojas.forEach(h => {
+        let btnAdd = h.querySelector(".btnAdd");
+        if (btnAdd) btnAdd.style.display = "none";
+    });
+
+    if (hojas.length > 0) {
+        let last = hojas[hojas.length - 1];
+        let btnAdd = last.querySelector(".btnAdd");
+        if (btnAdd) btnAdd.style.display = "inline-block";
+    }
+}
+
+/* =========================
+   PDF
+========================= */
+function generarPDF() {
+
+    let hojas = [...document.querySelectorAll(".hoja")]
+        .map(h => h.fotos || []);
+
+    fetch("/generar", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            hojas: hojas,
+            nombre: "RIJ_CFE"
+        })
+    })
+    .then(res => res.blob())
+    .then(blob => {
+
+        const fileName = "RIJ_CFE.pdf";
+        const file = new File([blob], fileName, { type: "application/pdf" });
+
+        const url = URL.createObjectURL(file);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    });
+}
+
+/* =========================
+   MODAL
+========================= */
+function cerrarModal() {
+    document.getElementById("modal").style.display = "none";
+}
+
+function eliminarImagen() {
+    if (imagenSeleccionada) {
+        let src = imagenSeleccionada.src;
+        imagenSeleccionada.remove();
+        hojaSeleccionada.fotos =
+            hojaSeleccionada.fotos.filter(f => f !== src);
+    }
+    cerrarModal();
+}
+
+function cambiarImagen() {
+
+    let input = document.createElement("input");
+    input.type = "file";
+
+    input.onchange = e => {
+
+        let file = e.target.files[0];
+        let reader = new FileReader();
+
+        reader.onload = ev => {
+
+            let newImg = ev.target.result;
+            let oldSrc = imagenSeleccionada.src;
+
+            hojaSeleccionada.fotos =
+                hojaSeleccionada.fotos.map(f =>
+                    f === oldSrc ? newImg : f
+                );
+
+            imagenSeleccionada.src = newImg;
+        };
+
+        reader.readAsDataURL(file);
+    };
+
+    input.click();
+    cerrarModal();
+}
+
+/* INIT */
+window.onload = () => agregarHoja();
+
+</script>
+
+</body>
+</html>
