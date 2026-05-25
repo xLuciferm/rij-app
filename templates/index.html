@@ -292,25 +292,51 @@ function renumerarHojas() {
 
     hojas.forEach((h, i) => {
 
+        // TÍTULO
         let titulo = h.querySelector(".header span:last-child");
-        if (titulo) titulo.textContent = "Hoja " + (i + 1);
 
-        let btnDel = h.querySelector(".btnDel");
-        if (btnDel) btnDel.style.display = (i === 0) ? "none" : "inline-block";
-    });
+        if (titulo) {
+            titulo.textContent = "Hoja " + (i + 1);
+        }
 
-    hojas.forEach(h => {
+        // BOTONES
         let btnAdd = h.querySelector(".btnAdd");
+        let btnDel = h.querySelector(".btnDel");
+        let btnPDF = h.querySelector(".btnPDF");
+
+        // OCULTAR TODOS
         if (btnAdd) btnAdd.style.display = "none";
+        if (btnDel) btnDel.style.display = "none";
+        if (btnPDF) btnPDF.style.display = "none";
     });
 
+    // MOSTRAR SOLO EN LA ÚLTIMA
     if (hojas.length > 0) {
+
         let last = hojas[hojas.length - 1];
+
         let btnAdd = last.querySelector(".btnAdd");
-        if (btnAdd) btnAdd.style.display = "inline-block";
+        let btnDel = last.querySelector(".btnDel");
+        let btnPDF = last.querySelector(".btnPDF");
+
+        if (btnAdd) {
+            btnAdd.style.display = "inline-block";
+        }
+
+        if (btnPDF) {
+            btnPDF.style.display = "inline-block";
+        }
+
+        // SOLO MOSTRAR ELIMINAR
+        // SI HAY MÁS DE UNA HOJA
+        if (btnDel) {
+            btnDel.style.display =
+                hojas.length > 1
+                ? "inline-block"
+                : "none";
+        }
     }
 }
-
 /* =========================
    PDF
 ========================= */

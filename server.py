@@ -56,18 +56,33 @@ def generar():
 
                 iw, ih = img.getSize()
 
+                # MÁRGENES
+                margin_x = 35
+                margin_top = 145
+                margin_bottom = 45
+
+                usable_w = width - (margin_x * 2)
+                usable_h = height - margin_top - margin_bottom
+
                 scale = min(
-                    500 / iw,
-                    420 / ih
+                    usable_w / iw,
+                    usable_h / ih
                 )
 
                 new_w = iw * scale
                 new_h = ih * scale
 
+                x = (width - new_w) / 2
+
+                y = (
+                    margin_bottom +
+                    (usable_h - new_h) / 2
+                )
+
                 c.drawImage(
                     img,
-                    (width - new_w) / 2,
-                    (height - new_h) / 2 - 10,
+                    x,
+                    y,
                     new_w,
                     new_h,
                     preserveAspectRatio=True
@@ -121,12 +136,25 @@ def generar():
                         )
                     )
 
+                    iw, ih = img.getSize()
+
+                    scale = min(
+                        img_w / iw,
+                        img_h / ih
+                    )
+
+                    final_w = iw * scale
+                    final_h = ih * scale
+
+                    pos_x = x + (img_w - final_w) / 2
+                    pos_y = y + (img_h - final_h) / 2
+
                     c.drawImage(
                         img,
-                        x,
-                        y,
-                        img_w,
-                        img_h,
+                        pos_x,
+                        pos_y,
+                        final_w,
+                        final_h,
                         preserveAspectRatio=True
                     )
 
