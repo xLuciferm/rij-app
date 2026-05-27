@@ -562,33 +562,9 @@ async function generarPDF(){
 
     try{
 
-        let nombre = prompt("Nombre del PDF:", "RIJ_CFE");
-        if(!nombre) return;
+        // 🔥 YA NO PREGUNTA NOMBRE
+        const nombre = "RIJ_CFE";
 
-        let loading = document.createElement("div");
-        loading.id = "loadingPDF";
-        loading.innerHTML = `
-            <div style="
-                position:fixed;
-                top:0;
-                left:0;
-                width:100%;
-                height:100%;
-                background:rgba(0,0,0,.5);
-                z-index:9999;
-                display:flex;
-                justify-content:center;
-                align-items:center;
-                color:white;
-                font-size:22px;
-                font-family:Arial;
-            ">
-                Generando PDF...
-            </div>
-        `;
-        document.body.appendChild(loading);
-
-        // 🔥 ESTRUCTURA REAL DE HOJAS
         const hojas = [];
 
         document.querySelectorAll(".hoja").forEach(h => {
@@ -600,7 +576,6 @@ async function generarPDF(){
                     const reader = new FileReader();
 
                     reader.onload = e => resolve(e.target.result);
-
                     reader.readAsDataURL(file);
 
                 });
@@ -628,12 +603,15 @@ async function generarPDF(){
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
 
-        document.getElementById("loadingPDF").remove();
-
         const a = document.createElement("a");
         a.href = url;
-        a.download = nombre + ".pdf";
+
+        // 🔥 descarga automática sin prompt del navegador
+        a.download = `${nombre}.pdf`;
+
+        document.body.appendChild(a);
         a.click();
+        a.remove();
 
         URL.revokeObjectURL(url);
 
@@ -642,10 +620,6 @@ async function generarPDF(){
         alert("Error al generar PDF");
     }
 }
-       
-/* =========================
-   MODAL
-========================= */
 
 function cerrarModal(){
 

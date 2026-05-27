@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, render_template, jsonify
+from flask import Flask, request, send_file, render_template
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
@@ -20,7 +20,7 @@ def home():
 
 
 # =========================
-# IMAGEN BASE64 -> IMAGE
+# BASE64 -> IMAGE
 # =========================
 def procesar_base64(img_base64):
 
@@ -66,40 +66,52 @@ def generar():
         )
 
         # =========================
-        # RECORRER HOJAS
+        # HOJAS
         # =========================
         for fotos in hojas:
 
             packet = BytesIO()
             c = canvas.Canvas(packet, pagesize=letter)
 
-            # =========================
-            # UNA IMAGEN
-            # =========================
+            # ==================================================
+            # 🔥 CASO 1: SOLO UNA IMAGEN (CENTRADA SEGURA)
+            # ==================================================
             if len(fotos) == 1:
 
                 img = procesar_base64(fotos[0])
                 iw, ih = img.getSize()
 
-                scale = min(
-                    (width - 80) / iw,
-                    (height - 200) / ih
-                )
+                # 🔥 ÁREA REAL DE TU PLANTILLA (ajustada visualmente)
+                margin_x = 50
+                margin_top = 140   # evita encabezado
+                margin_bottom = 100  # evita footer
+
+                usable_w = width - (margin_x * 2)
+                usable_h = height - margin_top - margin_bottom
+
+                # 🔥 escala segura dentro del área real
+                scale = min(usable_w / iw, usable_h / ih)
 
                 w = iw * scale
                 h = ih * scale
 
+                # 🔥 centrado dentro del área útil (NO toda la hoja)
+                x = margin_x + (usable_w - w) / 2
+                y = margin_bottom + (usable_h - h) / 2
+
                 c.drawImage(
                     img,
-                    (width - w) / 2,
-                    80,
+                    x,
+                    y,
                     w,
-                    h
+                    h,
+                    preserveAspectRatio=True,
+                    mask='auto'
                 )
 
-            # =========================
-            # VARIAS IMÁGENES
-            # =========================
+            # ==================================================
+            # 🔥 CASO 2: VARIAS IMÁGENES
+            # ==================================================
             else:
 
                 cols = 2 if len(fotos) <= 8 else 3
@@ -137,7 +149,9 @@ def generar():
                         x + (img_w - w) / 2,
                         y + (img_h - h) / 2,
                         w,
-                        h
+                        h,
+                        preserveAspectRatio=True,
+                        mask='auto'
                     )
 
                     if (i + 1) % cols == 0:
@@ -166,7 +180,7 @@ def generar():
             output,
             mimetype="application/pdf",
             as_attachment=True,
-            download_name="documento.pdf"
+            download_name=f"{nombre}.pdf"
         )
 
     except Exception:
