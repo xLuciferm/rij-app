@@ -445,7 +445,7 @@ async function generarPDF(){
 
     try{
 
-        // NOMBRE DEL PDF
+        // NOMBRE
         let nombre = prompt(
             "Nombre del PDF:",
             "RIJ_CFE"
@@ -502,72 +502,27 @@ async function generarPDF(){
             })
         });
 
-        // ERROR SERVIDOR
         if(!response.ok){
 
-            document.getElementById("loadingPDF")
-                .remove();
-
-            alert("Error generando PDF");
-
-            return;
+            throw new Error("Error servidor");
         }
 
         // PDF
         const blob = await response.blob();
 
-        const file = new File(
-            [blob],
-            `${nombre}.pdf`,
-            {
-                type:"application/pdf"
-            }
-        );
+        // URL PDF
+        const pdfURL =
+            URL.createObjectURL(blob);
 
         // QUITAR LOADING
         document.getElementById("loadingPDF")
             .remove();
 
-        // COMPARTIR EN CELULAR
-        if(
-            navigator.canShare &&
-            navigator.canShare({ files:[file] })
-        ){
-
-            await navigator.share({
-
-                files:[file],
-
-                title:nombre,
-
-                text:"PDF generado"
-            });
-
-        }else{
-
-            // DESCARGA NORMAL PC
-            const url =
-                URL.createObjectURL(blob);
-
-            const a =
-                document.createElement("a");
-
-            a.href = url;
-
-            a.download = `${nombre}.pdf`;
-
-            document.body.appendChild(a);
-
-            a.click();
-
-            a.remove();
-
-            setTimeout(() => {
-
-                URL.revokeObjectURL(url);
-
-            }, 3000);
-        }
+        // ABRIR PDF
+        window.open(
+            pdfURL,
+            "_blank"
+        );
 
     }catch(error){
 
