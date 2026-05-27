@@ -3,12 +3,50 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
+
+from PIL import Image
+
 import base64
 from io import BytesIO
 import traceback
 import os
 
 app = Flask(__name__)
+
+# =========================
+# COMPRIMIR IMAGEN
+# =========================
+def comprimir_imagen(base64_img):
+
+    img_data = base64.b64decode(
+        base64_img.split(",")[1]
+    )
+
+    img = Image.open(
+        BytesIO(img_data)
+    )
+
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+
+    # REDUCIR RESOLUCIÓN
+    max_size = (1200, 1200)
+
+    img.thumbnail(max_size)
+
+    output = BytesIO()
+
+    img.save(
+        output,
+        format="JPEG",
+        quality=40,
+        optimize=True
+    )
+
+    output.seek(0)
+
+    return output
+
 
 @app.route("/")
 def home():
@@ -21,8 +59,13 @@ def generar():
     try:
 
         data = request.json
+
         hojas = data.get("hojas", [])
-        nombre = data.get("nombre", "RIJ_CFE")
+
+        nombre = data.get(
+            "nombre",
+            "RIJ_CFE"
+        )
 
         plantilla_path = os.path.join(
             os.path.dirname(__file__),
@@ -37,7 +80,10 @@ def generar():
 
             packet = BytesIO()
 
-            c = canvas.Canvas(packet, pagesize=letter)
+            c = canvas.Canvas(
+                packet,
+                pagesize=letter
+            )
 
             fotos = hoja
 
@@ -47,22 +93,24 @@ def generar():
             if len(fotos) == 1:
 
                 img = ImageReader(
-                    BytesIO(
-                        base64.b64decode(
-                            fotos[0].split(",")[1]
-                        )
+                    comprimir_imagen(
+                        fotos[0]
                     )
                 )
 
                 iw, ih = img.getSize()
 
-                # MÁRGENES
                 margin_x = 35
                 margin_top = 145
                 margin_bottom = 45
 
                 usable_w = width - (margin_x * 2)
-                usable_h = height - margin_top - margin_bottom
+
+                usable_h = (
+                    height
+                    - margin_top
+                    - margin_bottom
+                )
 
                 scale = min(
                     usable_w / iw,
@@ -75,8 +123,8 @@ def generar():
                 x = (width - new_w) / 2
 
                 y = (
-                    margin_bottom +
-                    (usable_h - new_h) / 2
+                    margin_bottom
+                    + (usable_h - new_h) / 2
                 )
 
                 c.drawImage(
@@ -97,31 +145,50 @@ def generar():
 
                 if total <= 4:
                     cols = 2
+
                 elif total <= 9:
                     cols = 3
+
                 else:
                     cols = 4
 
-                rows = (total + cols - 1) // cols
+                rows = (
+                    total + cols - 1
+                ) // cols
 
                 margin_x = 45
                 margin_top = 155
                 margin_bottom = 60
+
                 gap = 10
 
-                usable_w = width - (margin_x * 2)
-                usable_h = height - margin_top - margin_bottom
+                usable_w = (
+                    width - (margin_x * 2)
+                )
+
+                usable_h = (
+                    height
+                    - margin_top
+                    - margin_bottom
+                )
 
                 img_w = (
-                    usable_w - (gap * (cols - 1))
+                    usable_w
+                    - (gap * (cols - 1))
                 ) / cols
 
                 img_h = (
-                    usable_h - (gap * (rows - 1))
+                    usable_h
+                    - (gap * (rows - 1))
                 ) / rows
 
                 x0 = margin_x
-                y0 = height - margin_top - img_h
+
+                y0 = (
+                    height
+                    - margin_top
+                    - img_h
+                )
 
                 x = x0
                 y = y0
@@ -129,10 +196,8 @@ def generar():
                 for j, foto in enumerate(fotos):
 
                     img = ImageReader(
-                        BytesIO(
-                            base64.b64decode(
-                                foto.split(",")[1]
-                            )
+                        comprimir_imagen(
+                            foto
                         )
                     )
 
@@ -144,10 +209,18 @@ def generar():
                     )
 
                     final_w = iw * scale
+
                     final_h = ih * scale
 
-                    pos_x = x + (img_w - final_w) / 2
-                    pos_y = y + (img_h - final_h) / 2
+                    pos_x = (
+                        x
+                        + (img_w - final_w) / 2
+                    )
+
+                    pos_y = (
+                        y
+                        + (img_h - final_h) / 2
+                    )
 
                     c.drawImage(
                         img,
@@ -159,9 +232,13 @@ def generar():
                     )
 
                     if (j + 1) % cols == 0:
+
                         x = x0
+
                         y -= img_h + gap
+
                     else:
+
                         x += img_w + gap
 
             c.save()
@@ -170,7 +247,9 @@ def generar():
 
             overlay_pdf = PdfReader(packet)
 
-            plantilla = PdfReader(plantilla_path)
+            plantilla = PdfReader(
+                plantilla_path
+            )
 
             base_page = plantilla.pages[0]
 
@@ -194,7 +273,9 @@ def generar():
         )
 
     except Exception:
+
         traceback.print_exc()
+
         return "Error", 500
 
 
