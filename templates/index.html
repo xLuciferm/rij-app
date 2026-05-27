@@ -4,117 +4,197 @@
 <title>RIJ PRO</title>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #f0f0f0;
+
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f0f0f0;
 }
 
-/* HOJA */
-.hoja {
-    width: 600px;
-    min-height: 800px;
-    background: white;
-    margin: 20px auto;
-    padding: 20px;
+/* =========================
+   HOJA
+========================= */
+
+.hoja{
+    width:600px;
+    height:800px;
+
+    margin:20px auto;
+
+    position:relative;
+
+    background-image:url("/static/plantilla.png");
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    box-shadow:0 0 10px rgba(0,0,0,.2);
 }
 
-.header {
-    background: #0a7a3d;
-    color: white;
-    padding: 10px;
-    display: flex;
-    justify-content: space-between;
+/* =========================
+   ÁREA IMÁGENES
+========================= */
+
+.foto-area{
+
+    position:absolute;
+
+    top:150px;
+    left:45px;
+
+    width:510px;
+    min-height:520px;
+
+    border:2px dashed rgba(0,0,0,.3);
+
+    padding:10px;
+
+    box-sizing:border-box;
+
+    transition:.2s;
 }
 
-/* ÁREA IMÁGENES */
-.foto-area {
-    border: 2px dashed gray;
-    width: 80%;
-    min-height: 300px;
-    margin: 30px auto 10px auto;
-    padding: 10px;
-    transition: 0.2s;
+.foto-area.dragover{
+    background:rgba(0,123,255,.1);
+    border:2px dashed #007bff;
 }
 
-.foto-area.dragover {
-    background: #e6f7ff;
-    border: 2px dashed #007bff;
+/* =========================
+   GALERÍA
+========================= */
+
+.galeria{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-top:10px;
 }
 
-/* GRID */
-.galeria {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-top: 10px;
+.galeria img{
+    width:100%;
+    height:160px;
+    object-fit:cover;
+    border-radius:6px;
+    cursor:pointer;
 }
 
-.galeria img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-radius: 6px;
-    cursor: pointer;
+/* =========================
+   BOTONES
+========================= */
+
+.panel-hoja{
+    position:absolute;
+    bottom:-60px;
+    width:100%;
+    text-align:center;
 }
 
-/* BOTONES */
-.boton {
-    padding: 10px 15px;
-    margin: 5px;
-    border: none;
-    cursor: pointer;
-    color: white;
-    border-radius: 5px;
+.boton{
+    padding:10px 15px;
+    margin:5px;
+    border:none;
+    cursor:pointer;
+    color:white;
+    border-radius:5px;
 }
 
-.azul { background: #007bff; }
-.gris { background: #555; }
-.verde { background: green; }
-.rojo { background: #dc3545; } /* 🔴 NUEVO COLOR */
-
-/* PANEL */
-.panel-hoja {
-    text-align: center;
-    margin-top: 15px;
+.azul{
+    background:#007bff;
 }
 
-/* MODAL */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.4);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
+.gris{
+    background:#555;
 }
 
-.modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    width: 260px;
-    text-align: center;
+.verde{
+    background:green;
 }
 
-.modal button {
-    width: 100%;
-    margin: 5px 0;
-    padding: 10px;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
+.rojo{
+    background:#dc3545;
 }
 
-.btn-cambiar { background: #007bff; color: white; }
-.btn-eliminar { background: #dc3545; color: white; }
-.btn-cerrar { background: #555; color: white; }
+/* =========================
+   MODAL
+========================= */
+
+.modal{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.4);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+}
+
+.modal-content{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    width:260px;
+    text-align:center;
+}
+
+.modal button{
+    width:100%;
+    margin:5px 0;
+    padding:10px;
+    border:none;
+    cursor:pointer;
+    border-radius:5px;
+}
+
+.btn-cambiar{
+    background:#007bff;
+    color:white;
+}
+
+.btn-eliminar{
+    background:#dc3545;
+    color:white;
+}
+
+.btn-cerrar{
+    background:#555;
+    color:white;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:700px){
+
+    .hoja{
+
+        width:95vw;
+        height:calc(95vw * 1.33);
+
+        background-size:100% 100%;
+    }
+
+    .foto-area{
+
+        top:18%;
+        left:7%;
+
+        width:86%;
+        min-height:55%;
+
+        padding:5px;
+    }
+
+    .galeria img{
+        height:110px;
+    }
+
+}
+
 </style>
-
 </head>
 
 <body>
@@ -122,14 +202,36 @@ body {
 <div id="contenedor"></div>
 
 <!-- MODAL -->
+
 <div id="modal" class="modal">
+
     <div class="modal-content">
+
         <h4>Opciones</h4>
 
-        <button class="btn-cambiar" onclick="cambiarImagen()">✏️ Cambiar imagen</button>
-        <button class="btn-eliminar" onclick="eliminarImagen()">🗑 Eliminar imagen</button>
-        <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+        <button
+            class="btn-cambiar"
+            onclick="cambiarImagen()"
+        >
+            ✏️ Cambiar imagen
+        </button>
+
+        <button
+            class="btn-eliminar"
+            onclick="eliminarImagen()"
+        >
+            🗑 Eliminar imagen
+        </button>
+
+        <button
+            class="btn-cerrar"
+            onclick="cerrarModal()"
+        >
+            Cerrar
+        </button>
+
     </div>
+
 </div>
 
 <script>
@@ -138,127 +240,138 @@ let imagenSeleccionada = null;
 let hojaSeleccionada = null;
 
 /* =========================
-   HOJA
+   CREAR HOJA
 ========================= */
-function crearHoja(numero) {
+
+function crearHoja(numero){
 
     let hoja = document.createElement("div");
+
     hoja.className = "hoja";
+
     hoja.fotos = [];
 
     hoja.innerHTML = `
-        <div class="header">
-            <span>REUNIÓN RIJ</span>
-            <span>Hoja ${numero}</span>
-        </div>
 
         <div class="foto-area">
+
             <div style="text-align:center;">
-                <div style="margin-bottom:10px;font-size:12px;">
-                    📎 Subir imagen o arrastrar aquí
+
+                <div
+                    style="
+                        margin-bottom:10px;
+                        font-size:12px;
+                    "
+                >
+                    📎 Subir imagen
                 </div>
 
-                <button class="boton gris btnSubir">📎 Subir imagen</button>
+                <button
+                    class="boton gris btnSubir"
+                >
+                    📎 Subir imagen
+                </button>
+
             </div>
 
             <div class="galeria"></div>
+
         </div>
 
         <div class="panel-hoja">
 
-            <!-- 🔴 ORDEN CORRECTO -->
-            <button class="boton verde btnAdd">➕ Agregar hoja</button>
-            <button class="boton rojo btnDel">🗑 Eliminar hoja</button>
-            <button class="boton azul btnPDF">📄 Generar PDF</button>
+            <button class="boton verde btnAdd">
+                ➕ Agregar hoja
+            </button>
+
+            <button class="boton rojo btnDel">
+                🗑 Eliminar hoja
+            </button>
+
+            <button class="boton azul btnPDF">
+                📄 Generar PDF
+            </button>
 
         </div>
     `;
 
     let area = hoja.querySelector(".foto-area");
+
     let galeria = hoja.querySelector(".galeria");
 
     let btnSubir = hoja.querySelector(".btnSubir");
+
     let btnAdd = hoja.querySelector(".btnAdd");
+
     let btnPDF = hoja.querySelector(".btnPDF");
+
     let btnDel = hoja.querySelector(".btnDel");
 
     /* SUBIR */
+
     btnSubir.onclick = () => {
+
         let input = document.createElement("input");
+
         input.type = "file";
+
         input.accept = "image/*";
+
         input.multiple = true;
 
         input.onchange = e => {
+
             [...e.target.files].forEach(file => {
-                cargarImagen(file, hoja, galeria);
+
+                cargarImagen(
+                    file,
+                    hoja,
+                    galeria
+                );
+
             });
+
         };
 
         input.click();
+
     };
 
-    /* AGREGAR */
     btnAdd.onclick = () => agregarHoja();
 
-    /* PDF */
     btnPDF.onclick = () => generarPDF();
 
-    /* ELIMINAR */
     btnDel.onclick = () => eliminarHoja(hoja);
-
-    /* DRAG */
-    area.addEventListener("dragover", e => {
-        e.preventDefault();
-        area.classList.add("dragover");
-    });
-
-    area.addEventListener("dragleave", () => {
-        area.classList.remove("dragover");
-    });
-
-    area.addEventListener("drop", e => {
-        e.preventDefault();
-        area.classList.remove("dragover");
-
-        [...e.dataTransfer.files].forEach(file => {
-            if (file.type.includes("image")) {
-                cargarImagen(file, hoja, galeria);
-            }
-        });
-    });
-
-    /* PEGAR */
-    area.addEventListener("paste", e => {
-        for (let item of e.clipboardData.items) {
-            if (item.type.includes("image")) {
-                cargarImagen(item.getAsFile(), hoja, galeria);
-            }
-        }
-    });
 
     return hoja;
 }
 
 /* =========================
-   IMAGEN
+   CARGAR IMAGEN
 ========================= */
-function cargarImagen(file, hoja, galeria) {
+
+function cargarImagen(file, hoja, galeria){
 
     let reader = new FileReader();
 
     reader.onload = e => {
 
         let img = document.createElement("img");
+
         img.src = e.target.result;
 
         img.onclick = () => {
+
             imagenSeleccionada = img;
+
             hojaSeleccionada = hoja;
-            document.getElementById("modal").style.display = "flex";
+
+            document.getElementById("modal")
+                .style.display = "flex";
         };
 
         galeria.appendChild(img);
+
         hoja.fotos.push(e.target.result);
     };
 
@@ -268,159 +381,172 @@ function cargarImagen(file, hoja, galeria) {
 /* =========================
    HOJAS
 ========================= */
-function agregarHoja() {
+
+function agregarHoja(){
+
     let cont = document.getElementById("contenedor");
 
-    let n = document.querySelectorAll(".hoja").length + 1;
+    let n =
+        document.querySelectorAll(".hoja")
+        .length + 1;
 
     cont.appendChild(crearHoja(n));
 
     renumerarHojas();
 }
 
-function eliminarHoja(hoja) {
+function eliminarHoja(hoja){
+
     hoja.remove();
+
     renumerarHojas();
 }
 
-/* =========================
-   REGLAS UI
-========================= */
-function renumerarHojas() {
+function renumerarHojas(){
 
-    let hojas = document.querySelectorAll(".hoja");
+    let hojas =
+        document.querySelectorAll(".hoja");
 
-    hojas.forEach((h, i) => {
+    hojas.forEach(h => {
 
-        // TÍTULO
-        let titulo = h.querySelector(".header span:last-child");
+        h.querySelector(".btnAdd")
+            .style.display = "none";
 
-        if (titulo) {
-            titulo.textContent = "Hoja " + (i + 1);
-        }
+        h.querySelector(".btnDel")
+            .style.display = "none";
 
-        // BOTONES
-        let btnAdd = h.querySelector(".btnAdd");
-        let btnDel = h.querySelector(".btnDel");
-        let btnPDF = h.querySelector(".btnPDF");
-
-        // OCULTAR TODOS
-        if (btnAdd) btnAdd.style.display = "none";
-        if (btnDel) btnDel.style.display = "none";
-        if (btnPDF) btnPDF.style.display = "none";
+        h.querySelector(".btnPDF")
+            .style.display = "none";
     });
 
-    // MOSTRAR SOLO EN LA ÚLTIMA
-    if (hojas.length > 0) {
+    if(hojas.length){
 
         let last = hojas[hojas.length - 1];
 
-        let btnAdd = last.querySelector(".btnAdd");
-        let btnDel = last.querySelector(".btnDel");
-        let btnPDF = last.querySelector(".btnPDF");
+        last.querySelector(".btnAdd")
+            .style.display = "inline-block";
 
-        if (btnAdd) {
-            btnAdd.style.display = "inline-block";
-        }
+        last.querySelector(".btnPDF")
+            .style.display = "inline-block";
 
-        if (btnPDF) {
-            btnPDF.style.display = "inline-block";
-        }
-
-        // SOLO MOSTRAR ELIMINAR
-        // SI HAY MÁS DE UNA HOJA
-        if (btnDel) {
-            btnDel.style.display =
+        last.querySelector(".btnDel")
+            .style.display =
                 hojas.length > 1
                 ? "inline-block"
                 : "none";
-        }
     }
 }
+
 /* =========================
    PDF
 ========================= */
-function generarPDF() {
 
-    let hojas = [...document.querySelectorAll(".hoja")]
+function generarPDF(){
+
+    let hojas =
+        [...document.querySelectorAll(".hoja")]
         .map(h => h.fotos || []);
 
-    fetch("/generar", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-            hojas: hojas,
-            nombre: "RIJ_CFE"
+    fetch("/generar",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            hojas:hojas,
+
+            nombre:"RIJ_CFE"
         })
+
     })
     .then(res => res.blob())
     .then(blob => {
 
-        const fileName = "RIJ_CFE.pdf";
-        const file = new File([blob], fileName, { type: "application/pdf" });
+        const url =
+            URL.createObjectURL(blob);
 
-        const url = URL.createObjectURL(file);
+        const a =
+            document.createElement("a");
 
-        const a = document.createElement("a");
         a.href = url;
-        a.download = fileName;
 
-        document.body.appendChild(a);
+        a.download = "RIJ_CFE.pdf";
+
         a.click();
-        a.remove();
 
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        URL.revokeObjectURL(url);
     });
 }
 
 /* =========================
    MODAL
 ========================= */
-function cerrarModal() {
-    document.getElementById("modal").style.display = "none";
+
+function cerrarModal(){
+
+    document.getElementById("modal")
+        .style.display = "none";
 }
 
-function eliminarImagen() {
-    if (imagenSeleccionada) {
+function eliminarImagen(){
+
+    if(imagenSeleccionada){
+
         let src = imagenSeleccionada.src;
+
         imagenSeleccionada.remove();
+
         hojaSeleccionada.fotos =
-            hojaSeleccionada.fotos.filter(f => f !== src);
+            hojaSeleccionada.fotos
+            .filter(f => f !== src);
     }
+
     cerrarModal();
 }
 
-function cambiarImagen() {
+function cambiarImagen(){
 
-    let input = document.createElement("input");
+    let input =
+        document.createElement("input");
+
     input.type = "file";
 
     input.onchange = e => {
 
         let file = e.target.files[0];
+
         let reader = new FileReader();
 
         reader.onload = ev => {
 
             let newImg = ev.target.result;
-            let oldSrc = imagenSeleccionada.src;
+
+            let oldSrc =
+                imagenSeleccionada.src;
 
             hojaSeleccionada.fotos =
                 hojaSeleccionada.fotos.map(f =>
-                    f === oldSrc ? newImg : f
+                    f === oldSrc
+                    ? newImg
+                    : f
                 );
 
-            imagenSeleccionada.src = newImg;
+            imagenSeleccionada.src =
+                newImg;
         };
 
         reader.readAsDataURL(file);
     };
 
     input.click();
+
     cerrarModal();
 }
 
-/* INIT */
 window.onload = () => agregarHoja();
 
 </script>
