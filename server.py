@@ -3,7 +3,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
-from PIL import Image
+from PIL import Image, ImageOps
 import base64
 from io import BytesIO
 import traceback
@@ -19,6 +19,7 @@ def home():
 # ====================================
 # COMPRESIÓN DE IMAGEN
 # ====================================
+
 def comprimir_imagen(base64_img):
 
     img_data = base64.b64decode(
@@ -26,6 +27,12 @@ def comprimir_imagen(base64_img):
     )
 
     img = Image.open(BytesIO(img_data))
+
+    # ====================================
+    # ✅ CORREGIR ORIENTACIÓN IPHONE
+    # ====================================
+
+    img = ImageOps.exif_transpose(img)
 
     # RGB
     if img.mode in ("RGBA", "P"):
@@ -88,6 +95,7 @@ def generar():
             # ====================================
             # UNA FOTO
             # ====================================
+
             if len(fotos) == 1:
 
                 img = comprimir_imagen(
@@ -135,11 +143,11 @@ def generar():
             # ====================================
             # VARIAS FOTOS
             # ====================================
+
             else:
 
                 total = len(fotos)
 
-                # ✅ NUEVA DISTRIBUCIÓN
                 if total <= 4:
                     cols = 2
 
