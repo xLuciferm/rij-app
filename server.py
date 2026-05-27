@@ -3,9 +3,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
-
 from PIL import Image
-
 import base64
 from io import BytesIO
 import traceback
@@ -13,44 +11,44 @@ import os
 
 app = Flask(__name__)
 
-# =========================
-# COMPRIMIR IMAGEN
-# =========================
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+
+# ====================================
+# COMPRESIÓN DE IMAGEN
+# ====================================
 def comprimir_imagen(base64_img):
 
     img_data = base64.b64decode(
         base64_img.split(",")[1]
     )
 
-    img = Image.open(
-        BytesIO(img_data)
-    )
+    img = Image.open(BytesIO(img_data))
 
-    if img.mode != "RGB":
+    # RGB
+    if img.mode in ("RGBA", "P"):
         img = img.convert("RGB")
 
-    # REDUCIR RESOLUCIÓN
-    max_size = (1200, 1200)
+    # REDIMENSIONAR
+    max_size = 1600
 
-    img.thumbnail(max_size)
+    img.thumbnail((max_size, max_size))
 
     output = BytesIO()
 
+    # COMPRESIÓN JPEG
     img.save(
         output,
         format="JPEG",
-        quality=40,
+        quality=55,
         optimize=True
     )
 
     output.seek(0)
 
-    return output
-
-
-@app.route("/")
-def home():
-    return render_template("index.html")
+    return ImageReader(output)
 
 
 @app.route("/generar", methods=["POST"])
@@ -87,15 +85,13 @@ def generar():
 
             fotos = hoja
 
-            # =========================
+            # ====================================
             # UNA FOTO
-            # =========================
+            # ====================================
             if len(fotos) == 1:
 
-                img = ImageReader(
-                    comprimir_imagen(
-                        fotos[0]
-                    )
+                img = comprimir_imagen(
+                    fotos[0]
                 )
 
                 iw, ih = img.getSize()
@@ -123,8 +119,8 @@ def generar():
                 x = (width - new_w) / 2
 
                 y = (
-                    margin_bottom
-                    + (usable_h - new_h) / 2
+                    margin_bottom +
+                    (usable_h - new_h) / 2
                 )
 
                 c.drawImage(
@@ -136,17 +132,21 @@ def generar():
                     preserveAspectRatio=True
                 )
 
-            # =========================
+            # ====================================
             # VARIAS FOTOS
-            # =========================
+            # ====================================
             else:
 
                 total = len(fotos)
 
+                # ✅ NUEVA DISTRIBUCIÓN
                 if total <= 4:
                     cols = 2
 
-                elif total <= 9:
+                elif total <= 8:
+                    cols = 2
+
+                elif total <= 12:
                     cols = 3
 
                 else:
@@ -195,10 +195,8 @@ def generar():
 
                 for j, foto in enumerate(fotos):
 
-                    img = ImageReader(
-                        comprimir_imagen(
-                            foto
-                        )
+                    img = comprimir_imagen(
+                        foto
                     )
 
                     iw, ih = img.getSize()
@@ -209,7 +207,6 @@ def generar():
                     )
 
                     final_w = iw * scale
-
                     final_h = ih * scale
 
                     pos_x = (
@@ -235,17 +232,23 @@ def generar():
 
                         x = x0
 
-                        y -= img_h + gap
+                        y -= (
+                            img_h + gap
+                        )
 
                     else:
 
-                        x += img_w + gap
+                        x += (
+                            img_w + gap
+                        )
 
             c.save()
 
             packet.seek(0)
 
-            overlay_pdf = PdfReader(packet)
+            overlay_pdf = PdfReader(
+                packet
+            )
 
             plantilla = PdfReader(
                 plantilla_path
@@ -257,7 +260,9 @@ def generar():
                 overlay_pdf.pages[0]
             )
 
-            pdf_writer.add_page(base_page)
+            pdf_writer.add_page(
+                base_page
+            )
 
         output = BytesIO()
 
