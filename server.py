@@ -1,295 +1,177 @@
-from flask import Flask, request, send_file, render_template
+from flask import Flask, request, send_file, render_template, jsonify
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
 from PIL import Image, ImageOps
-import base64
 from io import BytesIO
+import base64
 import traceback
 import os
 
 app = Flask(__name__)
 
+# =========================
+# HOME
+# =========================
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
-# ====================================
-# COMPRESIÓN DE IMAGEN
-# ====================================
+# =========================
+# IMAGEN BASE64 -> IMAGE
+# =========================
+def procesar_base64(img_base64):
 
-def comprimir_imagen(base64_img):
-
-    img_data = base64.b64decode(
-        base64_img.split(",")[1]
-    )
+    img_data = base64.b64decode(img_base64.split(",")[1])
 
     img = Image.open(BytesIO(img_data))
-
-    # ====================================
-    # ✅ CORREGIR ORIENTACIÓN IPHONE
-    # ====================================
-
     img = ImageOps.exif_transpose(img)
 
-    # RGB
-    if img.mode in ("RGBA", "P"):
+    if img.mode in ("RGBA", "P", "LA"):
         img = img.convert("RGB")
 
-    # REDIMENSIONAR
-    max_size = 1600
-
-    img.thumbnail((max_size, max_size))
+    img.thumbnail((1500, 1500))
 
     output = BytesIO()
-
-    # COMPRESIÓN JPEG
-    img.save(
-        output,
-        format="JPEG",
-        quality=55,
-        optimize=True
-    )
-
+    img.save(output, format="JPEG", quality=55, optimize=True)
     output.seek(0)
 
     return ImageReader(output)
 
 
+# =========================
+# GENERAR PDF
+# =========================
 @app.route("/generar", methods=["POST"])
 def generar():
 
     try:
 
-        data = request.json
+        data = request.get_json()
 
-        hojas = data.get("hojas", [])
+        if not data or "hojas" not in data:
+            return "No data received", 400
 
-        nombre = data.get(
-            "nombre",
-            "RIJ_CFE"
-        )
+        nombre = data.get("nombre", "RIJ_CFE")
+        hojas = data["hojas"]
+
+        pdf_writer = PdfWriter()
+        width, height = letter
 
         plantilla_path = os.path.join(
             os.path.dirname(__file__),
             "plantilla.pdf"
         )
 
-        pdf_writer = PdfWriter()
-
-        width, height = letter
-
-        for hoja in hojas:
+        # =========================
+        # RECORRER HOJAS
+        # =========================
+        for fotos in hojas:
 
             packet = BytesIO()
+            c = canvas.Canvas(packet, pagesize=letter)
 
-            c = canvas.Canvas(
-                packet,
-                pagesize=letter
-            )
-
-            fotos = hoja
-
-            # ====================================
-            # UNA FOTO
-            # ====================================
-
+            # =========================
+            # UNA IMAGEN
+            # =========================
             if len(fotos) == 1:
 
-                img = comprimir_imagen(
-                    fotos[0]
-                )
-
+                img = procesar_base64(fotos[0])
                 iw, ih = img.getSize()
 
-                margin_x = 35
-                margin_top = 145
-                margin_bottom = 45
-
-                usable_w = width - (margin_x * 2)
-
-                usable_h = (
-                    height
-                    - margin_top
-                    - margin_bottom
-                )
-
                 scale = min(
-                    usable_w / iw,
-                    usable_h / ih
+                    (width - 80) / iw,
+                    (height - 200) / ih
                 )
 
-                new_w = iw * scale
-                new_h = ih * scale
-
-                x = (width - new_w) / 2
-
-                y = (
-                    margin_bottom +
-                    (usable_h - new_h) / 2
-                )
+                w = iw * scale
+                h = ih * scale
 
                 c.drawImage(
                     img,
-                    x,
-                    y,
-                    new_w,
-                    new_h,
-                    preserveAspectRatio=True
+                    (width - w) / 2,
+                    80,
+                    w,
+                    h
                 )
 
-            # ====================================
-            # VARIAS FOTOS
-            # ====================================
-
+            # =========================
+            # VARIAS IMÁGENES
+            # =========================
             else:
 
-                total = len(fotos)
-
-                if total <= 4:
-                    cols = 2
-
-                elif total <= 8:
-                    cols = 2
-
-                elif total <= 12:
-                    cols = 3
-
-                else:
-                    cols = 4
-
-                rows = (
-                    total + cols - 1
-                ) // cols
+                cols = 2 if len(fotos) <= 8 else 3
 
                 margin_x = 45
-                margin_top = 155
+                margin_top = 140
                 margin_bottom = 60
-
                 gap = 10
 
-                usable_w = (
-                    width - (margin_x * 2)
-                )
+                usable_w = width - (margin_x * 2)
+                usable_h = height - margin_top - margin_bottom
 
-                usable_h = (
-                    height
-                    - margin_top
-                    - margin_bottom
-                )
-
-                img_w = (
-                    usable_w
-                    - (gap * (cols - 1))
-                ) / cols
-
-                img_h = (
-                    usable_h
-                    - (gap * (rows - 1))
-                ) / rows
+                img_w = (usable_w - (cols - 1) * gap) / cols
+                rows = (len(fotos) + cols - 1) // cols
+                img_h = (usable_h - (rows - 1) * gap) / rows
 
                 x0 = margin_x
-
-                y0 = (
-                    height
-                    - margin_top
-                    - img_h
-                )
+                y0 = height - margin_top - img_h
 
                 x = x0
                 y = y0
 
-                for j, foto in enumerate(fotos):
+                for i, f in enumerate(fotos):
 
-                    img = comprimir_imagen(
-                        foto
-                    )
-
+                    img = procesar_base64(f)
                     iw, ih = img.getSize()
 
-                    scale = min(
-                        img_w / iw,
-                        img_h / ih
-                    )
+                    scale = min(img_w / iw, img_h / ih)
 
-                    final_w = iw * scale
-                    final_h = ih * scale
-
-                    pos_x = (
-                        x
-                        + (img_w - final_w) / 2
-                    )
-
-                    pos_y = (
-                        y
-                        + (img_h - final_h) / 2
-                    )
+                    w = iw * scale
+                    h = ih * scale
 
                     c.drawImage(
                         img,
-                        pos_x,
-                        pos_y,
-                        final_w,
-                        final_h,
-                        preserveAspectRatio=True
+                        x + (img_w - w) / 2,
+                        y + (img_h - h) / 2,
+                        w,
+                        h
                     )
 
-                    if (j + 1) % cols == 0:
-
+                    if (i + 1) % cols == 0:
                         x = x0
-
-                        y -= (
-                            img_h + gap
-                        )
-
+                        y -= (img_h + gap)
                     else:
-
-                        x += (
-                            img_w + gap
-                        )
+                        x += (img_w + gap)
 
             c.save()
 
             packet.seek(0)
 
-            overlay_pdf = PdfReader(
-                packet
-            )
+            overlay = PdfReader(packet)
+            plantilla = PdfReader(plantilla_path)
 
-            plantilla = PdfReader(
-                plantilla_path
-            )
+            page = plantilla.pages[0]
+            page.merge_page(overlay.pages[0])
 
-            base_page = plantilla.pages[0]
-
-            base_page.merge_page(
-                overlay_pdf.pages[0]
-            )
-
-            pdf_writer.add_page(
-                base_page
-            )
+            pdf_writer.add_page(page)
 
         output = BytesIO()
-
         pdf_writer.write(output)
-
         output.seek(0)
 
         return send_file(
             output,
             mimetype="application/pdf",
             as_attachment=True,
-            download_name=f"{nombre}.pdf"
+            download_name="documento.pdf"
         )
 
     except Exception:
-
         traceback.print_exc()
-
-        return "Error", 500
+        return "Error al generar PDF", 500
 
 
 if __name__ == "__main__":

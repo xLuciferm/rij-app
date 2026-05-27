@@ -39,11 +39,12 @@ body{
 
     position:absolute;
 
-    top:150px;
+    top:120px;
     left:45px;
 
     width:510px;
-    min-height:520px;
+
+    height:320px;
 
     border:2px dashed rgba(0,0,0,.3);
 
@@ -52,30 +53,8 @@ body{
     box-sizing:border-box;
 
     transition:.2s;
-}
 
-.foto-area.dragover{
-    background:rgba(0,123,255,.1);
-    border:2px dashed #007bff;
-}
-
-/* =========================
-   GALERÍA
-========================= */
-
-.galeria{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:10px;
-    margin-top:10px;
-}
-
-.galeria img{
-    width:100%;
-    height:160px;
-    object-fit:cover;
-    border-radius:6px;
-    cursor:pointer;
+    overflow:auto;
 }
 
 /* =========================
@@ -83,9 +62,17 @@ body{
 ========================= */
 
 .panel-hoja{
+
     position:absolute;
-    bottom:-60px;
+
+    top:500px;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
     width:100%;
+
     text-align:center;
 }
 
@@ -112,6 +99,25 @@ body{
 
 .rojo{
     background:#dc3545;
+}
+
+/* =========================
+   GALERÍA
+========================= */
+
+.galeria{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-top:10px;
+}
+
+.galeria img{
+    width:100%;
+    height:160px;
+    object-fit:cover;
+    border-radius:6px;
+    cursor:pointer;
 }
 
 /* =========================
@@ -240,6 +246,12 @@ let imagenSeleccionada = null;
 let hojaSeleccionada = null;
 
 /* =========================
+   HOJA ACTIVA
+========================= */
+
+let hojaActiva = null;
+
+/* =========================
    CREAR HOJA
 ========================= */
 
@@ -271,6 +283,14 @@ function crearHoja(numero){
                 >
                     📎 Subir imagen
                 </button>
+
+                <div style="
+                    margin-top:10px;
+                    font-size:11px;
+                    color:#666;
+                ">
+                    Arrastra imágenes o pega con CTRL + V
+                </div>
 
             </div>
 
@@ -307,9 +327,29 @@ function crearHoja(numero){
 
     let btnDel = hoja.querySelector(".btnDel");
 
-    /* SUBIR */
+    /* =========================
+    ACTIVAR HOJA
+    ========================= */
+
+    hoja.addEventListener("click", () => {
+
+        hojaActiva = {
+            hoja: hoja,
+            galeria: galeria
+        };
+
+    });
+
+    /* =========================
+       SUBIR NORMAL
+    ========================= */
 
     btnSubir.onclick = () => {
+
+        hojaActiva = {
+            hoja: hoja,
+            galeria: galeria
+        };
 
         let input = document.createElement("input");
 
@@ -337,6 +377,58 @@ function crearHoja(numero){
 
     };
 
+    /* =========================
+       DRAG & DROP
+    ========================= */
+
+    area.addEventListener("dragover", e => {
+
+        e.preventDefault();
+
+        area.style.background =
+            "rgba(0,123,255,.1)";
+
+        area.style.border =
+            "2px dashed #007bff";
+    });
+
+    area.addEventListener("dragleave", () => {
+
+        area.style.background = "";
+
+        area.style.border =
+            "2px dashed rgba(0,0,0,.3)";
+    });
+
+    area.addEventListener("drop", e => {
+
+        e.preventDefault();
+
+        hojaActiva = {
+            hoja: hoja,
+            galeria: galeria
+        };
+
+        area.style.background = "";
+
+        area.style.border =
+            "2px dashed rgba(0,0,0,.3)";
+
+        const files = e.dataTransfer.files;
+
+        [...files].forEach(file => {
+
+            if(file.type.startsWith("image/")){
+
+                cargarImagen(
+                    file,
+                    hoja,
+                    galeria
+                );
+            }
+        });
+    });
+
     btnAdd.onclick = () => agregarHoja();
 
     btnPDF.onclick = () => generarPDF();
@@ -347,35 +439,60 @@ function crearHoja(numero){
 }
 
 /* =========================
+   PEGAR CTRL + V
+========================= */
+
+document.addEventListener("paste", e => {
+
+    if(!hojaActiva){
+        return;
+    }
+
+    const items =
+        e.clipboardData.items;
+
+    for(let item of items){
+
+        if(
+            item.type.indexOf("image")
+            !== -1
+        ){
+
+            const file =
+                item.getAsFile();
+
+            cargarImagen(
+                file,
+                hojaActiva.hoja,
+                hojaActiva.galeria
+            );
+        }
+    }
+});
+
+/* =========================
    CARGAR IMAGEN
 ========================= */
 
 function cargarImagen(file, hoja, galeria){
 
-    let reader = new FileReader();
+    let img = document.createElement("img");
 
-    reader.onload = e => {
+    img.src = URL.createObjectURL(file);
 
-        let img = document.createElement("img");
+    img.file = file;
 
-        img.src = e.target.result;
+    img.onclick = () => {
 
-        img.onclick = () => {
+        imagenSeleccionada = img;
+        hojaSeleccionada = hoja;
 
-            imagenSeleccionada = img;
-
-            hojaSeleccionada = hoja;
-
-            document.getElementById("modal")
-                .style.display = "flex";
-        };
-
-        galeria.appendChild(img);
-
-        hoja.fotos.push(e.target.result);
+        document.getElementById("modal").style.display = "flex";
     };
 
-    reader.readAsDataURL(file);
+    galeria.appendChild(img);
+
+    hoja.fotos.push(file); // 👈 AHORA ES FILE REAL
 }
 
 /* =========================
@@ -390,9 +507,13 @@ function agregarHoja(){
         document.querySelectorAll(".hoja")
         .length + 1;
 
-    cont.appendChild(crearHoja(n));
+    let nuevaHoja = crearHoja(n);
+
+    cont.appendChild(nuevaHoja);
 
     renumerarHojas();
+
+    nuevaHoja.click();
 }
 
 function eliminarHoja(hoja){
@@ -437,29 +558,15 @@ function renumerarHojas(){
     }
 }
 
-/* =========================
-   PDF
-========================= */
-
 async function generarPDF(){
 
     try{
 
-        // NOMBRE
-        let nombre = prompt(
-            "Nombre del PDF:",
-            "RIJ_CFE"
-        );
+        let nombre = prompt("Nombre del PDF:", "RIJ_CFE");
+        if(!nombre) return;
 
-        if(!nombre){
-            return;
-        }
-
-        // LOADING
         let loading = document.createElement("div");
-
         loading.id = "loadingPDF";
-
         loading.innerHTML = `
             <div style="
                 position:fixed;
@@ -479,66 +586,63 @@ async function generarPDF(){
                 Generando PDF...
             </div>
         `;
-
         document.body.appendChild(loading);
 
-        let hojas =
-            [...document.querySelectorAll(".hoja")]
-            .map(h => h.fotos || []);
+        // 🔥 ESTRUCTURA REAL DE HOJAS
+        const hojas = [];
 
-        const response = await fetch("/generar",{
+        document.querySelectorAll(".hoja").forEach(h => {
 
-            method:"POST",
+            const fotos = (h.fotos || []).map(file => {
 
-            headers:{
-                "Content-Type":"application/json"
+                return new Promise(resolve => {
+
+                    const reader = new FileReader();
+
+                    reader.onload = e => resolve(e.target.result);
+
+                    reader.readAsDataURL(file);
+
+                });
+
+            });
+
+            hojas.push(Promise.all(fotos));
+        });
+
+        const data = await Promise.all(hojas);
+
+        const response = await fetch("/generar", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
             },
-
-            body:JSON.stringify({
-
-                hojas:hojas,
-
-                nombre:nombre
+            body: JSON.stringify({
+                nombre,
+                hojas: data
             })
         });
 
-        if(!response.ok){
+        if(!response.ok) throw new Error("Error servidor");
 
-            throw new Error("Error servidor");
-        }
-
-        // PDF
         const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
 
-        // URL PDF
-        const pdfURL =
-            URL.createObjectURL(blob);
+        document.getElementById("loadingPDF").remove();
 
-        // QUITAR LOADING
-        document.getElementById("loadingPDF")
-            .remove();
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nombre + ".pdf";
+        a.click();
 
-        // ABRIR PDF
-        window.open(
-            pdfURL,
-            "_blank"
-        );
+        URL.revokeObjectURL(url);
 
-    }catch(error){
-
-        console.log(error);
-
-        let loading =
-            document.getElementById("loadingPDF");
-
-        if(loading){
-            loading.remove();
-        }
-
+    }catch(err){
+        console.log(err);
         alert("Error al generar PDF");
     }
 }
-
+       
 /* =========================
    MODAL
 ========================= */
