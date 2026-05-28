@@ -3,6 +3,11 @@
 <head>
 <title>RIJ PRO</title>
 
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+/>
+
 <style>
 
 body{
@@ -16,6 +21,7 @@ body{
 ========================= */
 
 .hoja{
+
     width:600px;
     height:800px;
 
@@ -24,6 +30,7 @@ body{
     position:relative;
 
     background-image:url("/static/plantilla.png");
+
     background-size:cover;
     background-position:center;
     background-repeat:no-repeat;
@@ -43,7 +50,6 @@ body{
     left:45px;
 
     width:510px;
-
     height:320px;
 
     border:2px dashed rgba(0,0,0,.3);
@@ -77,11 +83,16 @@ body{
 }
 
 .boton{
+
     padding:10px 15px;
     margin:5px;
+
     border:none;
+
     cursor:pointer;
+
     color:white;
+
     border-radius:5px;
 }
 
@@ -106,17 +117,25 @@ body{
 ========================= */
 
 .galeria{
+
     display:grid;
+
     grid-template-columns:repeat(2,1fr);
+
     gap:10px;
+
     margin-top:10px;
 }
 
 .galeria img{
+
     width:100%;
     height:160px;
+
     object-fit:cover;
+
     border-radius:6px;
+
     cursor:pointer;
 }
 
@@ -125,46 +144,67 @@ body{
 ========================= */
 
 .modal{
+
     position:fixed;
+
     top:0;
     left:0;
+
     width:100%;
     height:100%;
+
     background:rgba(0,0,0,.4);
+
     display:none;
+
     justify-content:center;
     align-items:center;
+
     z-index:999;
 }
 
 .modal-content{
+
     background:white;
+
     padding:20px;
+
     border-radius:10px;
+
     width:260px;
+
     text-align:center;
 }
 
 .modal button{
+
     width:100%;
+
     margin:5px 0;
+
     padding:10px;
+
     border:none;
+
     cursor:pointer;
+
     border-radius:5px;
 }
 
 .btn-cambiar{
+
     background:#007bff;
     color:white;
 }
 
 .btn-eliminar{
+
     background:#dc3545;
     color:white;
 }
 
 .btn-cerrar{
+
     background:#555;
     color:white;
 }
@@ -178,6 +218,7 @@ body{
     .hoja{
 
         width:95vw;
+
         height:calc(95vw * 1.33);
 
         background-size:100% 100%;
@@ -195,6 +236,7 @@ body{
     }
 
     .galeria img{
+
         height:110px;
     }
 
@@ -327,10 +369,6 @@ function crearHoja(numero){
 
     let btnDel = hoja.querySelector(".btnDel");
 
-    /* =========================
-    ACTIVAR HOJA
-    ========================= */
-
     hoja.addEventListener("click", () => {
 
         hojaActiva = {
@@ -339,10 +377,6 @@ function crearHoja(numero){
         };
 
     });
-
-    /* =========================
-       SUBIR NORMAL
-    ========================= */
 
     btnSubir.onclick = () => {
 
@@ -376,10 +410,6 @@ function crearHoja(numero){
         input.click();
 
     };
-
-    /* =========================
-       DRAG & DROP
-    ========================= */
 
     area.addEventListener("dragover", e => {
 
@@ -438,10 +468,6 @@ function crearHoja(numero){
     return hoja;
 }
 
-/* =========================
-   PEGAR CTRL + V
-========================= */
-
 document.addEventListener("paste", e => {
 
     if(!hojaActiva){
@@ -485,14 +511,16 @@ function cargarImagen(file, hoja, galeria){
     img.onclick = () => {
 
         imagenSeleccionada = img;
+
         hojaSeleccionada = hoja;
 
-        document.getElementById("modal").style.display = "flex";
+        document.getElementById("modal")
+            .style.display = "flex";
     };
 
     galeria.appendChild(img);
 
-    hoja.fotos.push(file); // 👈 AHORA ES FILE REAL
+    hoja.fotos.push(file);
 }
 
 /* =========================
@@ -501,7 +529,8 @@ function cargarImagen(file, hoja, galeria){
 
 function agregarHoja(){
 
-    let cont = document.getElementById("contenedor");
+    let cont =
+        document.getElementById("contenedor");
 
     let n =
         document.querySelectorAll(".hoja")
@@ -558,24 +587,33 @@ function renumerarHojas(){
     }
 }
 
+/* =========================
+   GENERAR PDF
+========================= */
+
 async function generarPDF(){
 
     try{
 
-        // 🔥 YA NO PREGUNTA NOMBRE
         const nombre = "RIJ_CFE";
 
         const hojas = [];
 
-        document.querySelectorAll(".hoja").forEach(h => {
+        document
+            .querySelectorAll(".hoja")
+            .forEach(h => {
 
-            const fotos = (h.fotos || []).map(file => {
+            const fotos =
+                (h.fotos || []).map(file => {
 
                 return new Promise(resolve => {
 
-                    const reader = new FileReader();
+                    const reader =
+                        new FileReader();
 
-                    reader.onload = e => resolve(e.target.result);
+                    reader.onload =
+                        e => resolve(e.target.result);
+
                     reader.readAsDataURL(file);
 
                 });
@@ -583,40 +621,79 @@ async function generarPDF(){
             });
 
             hojas.push(Promise.all(fotos));
+
         });
 
-        const data = await Promise.all(hojas);
+        const data =
+            await Promise.all(hojas);
 
-        const response = await fetch("/generar", {
+        const response =
+            await fetch("/generar", {
+
             method: "POST",
+
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type":
+                    "application/json"
             },
+
             body: JSON.stringify({
                 nombre,
                 hojas: data
             })
+
         });
 
-        if(!response.ok) throw new Error("Error servidor");
+        if(!response.ok){
 
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
+            throw new Error(
+                "Error servidor"
+            );
+        }
 
-        const a = document.createElement("a");
-        a.href = url;
+        // 🔥 MOBILE + PC
+        const blob =
+            await response.blob();
 
-        // 🔥 descarga automática sin prompt del navegador
-        a.download = `${nombre}.pdf`;
+        const url =
+            URL.createObjectURL(blob);
 
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        // 🔥 iPhone / Android
+        if(
+            /Android|iPhone|iPad|iPod/i
+            .test(navigator.userAgent)
+        ){
 
-        URL.revokeObjectURL(url);
+            window.open(url, "_blank");
+
+        }else{
+
+            // 🔥 PC descarga directa
+            const a =
+                document.createElement("a");
+
+            a.href = url;
+
+            a.download =
+                `${nombre}.pdf`;
+
+            document.body.appendChild(a);
+
+            a.click();
+
+            a.remove();
+        }
+
+        setTimeout(() => {
+
+            URL.revokeObjectURL(url);
+
+        }, 10000);
 
     }catch(err){
+
         console.log(err);
+
         alert("Error al generar PDF");
     }
 }
@@ -631,13 +708,13 @@ function eliminarImagen(){
 
     if(imagenSeleccionada){
 
-        let src = imagenSeleccionada.src;
+        hojaSeleccionada.fotos =
+            hojaSeleccionada.fotos.filter(
+                file =>
+                    file !== imagenSeleccionada.file
+            );
 
         imagenSeleccionada.remove();
-
-        hojaSeleccionada.fotos =
-            hojaSeleccionada.fotos
-            .filter(f => f !== src);
     }
 
     cerrarModal();
@@ -650,31 +727,31 @@ function cambiarImagen(){
 
     input.type = "file";
 
+    input.accept = "image/*";
+
     input.onchange = e => {
 
-        let file = e.target.files[0];
+        let nuevoFile =
+            e.target.files[0];
 
-        let reader = new FileReader();
+        if(!nuevoFile) return;
 
-        reader.onload = ev => {
+        hojaSeleccionada.fotos =
+            hojaSeleccionada.fotos.map(
+                file =>
 
-            let newImg = ev.target.result;
+                file === imagenSeleccionada.file
+                ? nuevoFile
+                : file
+            );
 
-            let oldSrc =
-                imagenSeleccionada.src;
+        imagenSeleccionada.file =
+            nuevoFile;
 
-            hojaSeleccionada.fotos =
-                hojaSeleccionada.fotos.map(f =>
-                    f === oldSrc
-                    ? newImg
-                    : f
-                );
-
-            imagenSeleccionada.src =
-                newImg;
-        };
-
-        reader.readAsDataURL(file);
+        imagenSeleccionada.src =
+            URL.createObjectURL(
+                nuevoFile
+            );
     };
 
     input.click();

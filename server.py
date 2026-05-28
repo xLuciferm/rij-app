@@ -35,7 +35,14 @@ def procesar_base64(img_base64):
     img.thumbnail((1500, 1500))
 
     output = BytesIO()
-    img.save(output, format="JPEG", quality=55, optimize=True)
+
+    img.save(
+        output,
+        format="JPEG",
+        quality=55,
+        optimize=True
+    )
+
     output.seek(0)
 
     return ImageReader(output)
@@ -58,6 +65,7 @@ def generar():
         hojas = data["hojas"]
 
         pdf_writer = PdfWriter()
+
         width, height = letter
 
         plantilla_path = os.path.join(
@@ -71,31 +79,36 @@ def generar():
         for fotos in hojas:
 
             packet = BytesIO()
-            c = canvas.Canvas(packet, pagesize=letter)
+
+            c = canvas.Canvas(
+                packet,
+                pagesize=letter
+            )
 
             # ==================================================
-            # 🔥 CASO 1: SOLO UNA IMAGEN (CENTRADA SEGURA)
+            # 🔥 CASO 1: SOLO UNA IMAGEN
             # ==================================================
             if len(fotos) == 1:
 
                 img = procesar_base64(fotos[0])
+
                 iw, ih = img.getSize()
 
-                # 🔥 ÁREA REAL DE TU PLANTILLA (ajustada visualmente)
                 margin_x = 50
-                margin_top = 140   # evita encabezado
-                margin_bottom = 100  # evita footer
+                margin_top = 140
+                margin_bottom = 100
 
                 usable_w = width - (margin_x * 2)
                 usable_h = height - margin_top - margin_bottom
 
-                # 🔥 escala segura dentro del área real
-                scale = min(usable_w / iw, usable_h / ih)
+                scale = min(
+                    usable_w / iw,
+                    usable_h / ih
+                )
 
                 w = iw * scale
                 h = ih * scale
 
-                # 🔥 centrado dentro del área útil (NO toda la hoja)
                 x = margin_x + (usable_w - w) / 2
                 y = margin_bottom + (usable_h - h) / 2
 
@@ -112,7 +125,7 @@ def generar():
             # ==================================================
             # 🔥 CASO 2: VARIAS IMÁGENES
             # ==================================================
-            else:
+            elif len(fotos) > 1:
 
                 cols = 2 if len(fotos) <= 8 else 3
 
@@ -124,9 +137,17 @@ def generar():
                 usable_w = width - (margin_x * 2)
                 usable_h = height - margin_top - margin_bottom
 
-                img_w = (usable_w - (cols - 1) * gap) / cols
-                rows = (len(fotos) + cols - 1) // cols
-                img_h = (usable_h - (rows - 1) * gap) / rows
+                img_w = (
+                    usable_w - (cols - 1) * gap
+                ) / cols
+
+                rows = (
+                    len(fotos) + cols - 1
+                ) // cols
+
+                img_h = (
+                    usable_h - (rows - 1) * gap
+                ) / rows
 
                 x0 = margin_x
                 y0 = height - margin_top - img_h
@@ -137,9 +158,13 @@ def generar():
                 for i, f in enumerate(fotos):
 
                     img = procesar_base64(f)
+
                     iw, ih = img.getSize()
 
-                    scale = min(img_w / iw, img_h / ih)
+                    scale = min(
+                        img_w / iw,
+                        img_h / ih
+                    )
 
                     w = iw * scale
                     h = ih * scale
@@ -155,9 +180,12 @@ def generar():
                     )
 
                     if (i + 1) % cols == 0:
+
                         x = x0
                         y -= (img_h + gap)
+
                     else:
+
                         x += (img_w + gap)
 
             c.save()
@@ -165,15 +193,24 @@ def generar():
             packet.seek(0)
 
             overlay = PdfReader(packet)
-            plantilla = PdfReader(plantilla_path)
+
+            plantilla = PdfReader(
+                plantilla_path
+            )
 
             page = plantilla.pages[0]
-            page.merge_page(overlay.pages[0])
+
+            if len(overlay.pages) > 0:
+                page.merge_page(
+                    overlay.pages[0]
+                )
 
             pdf_writer.add_page(page)
 
         output = BytesIO()
+
         pdf_writer.write(output)
+
         output.seek(0)
 
         return send_file(
@@ -184,9 +221,17 @@ def generar():
         )
 
     except Exception:
+
         traceback.print_exc()
+
         return "Error al generar PDF", 500
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
+    
