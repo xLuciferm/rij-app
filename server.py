@@ -5,9 +5,12 @@ from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
 from PIL import Image, ImageOps
 from io import BytesIO
+from copy import copy
+
 import base64
 import traceback
 import os
+import json
 
 app = Flask(__name__)
 
@@ -24,22 +27,26 @@ def home():
 # =========================
 def procesar_base64(img_base64):
 
-    img_data = base64.b64decode(img_base64.split(",")[1])
+    img_data = base64.b64decode(
+        img_base64.split(",")[1]
+    )
 
     img = Image.open(BytesIO(img_data))
+
     img = ImageOps.exif_transpose(img)
 
     if img.mode in ("RGBA", "P", "LA"):
         img = img.convert("RGB")
 
-    img.thumbnail((1500, 1500))
+    # 🔥 MÁS LIGERO
+    img.thumbnail((1200, 1200))
 
     output = BytesIO()
 
     img.save(
         output,
         format="JPEG",
-        quality=55,
+        quality=40,
         optimize=True
     )
 
@@ -56,12 +63,18 @@ def generar():
 
     try:
 
-        data = request.get_json()
+        data = json.loads(
+            request.form["data"]
+        )
 
         if not data or "hojas" not in data:
             return "No data received", 400
 
-        nombre = data.get("nombre", "RIJ_CFE")
+        nombre = data.get(
+            "nombre",
+            "RIJ_CFE"
+        )
+
         hojas = data["hojas"]
 
         pdf_writer = PdfWriter()
@@ -71,6 +84,10 @@ def generar():
         plantilla_path = os.path.join(
             os.path.dirname(__file__),
             "plantilla.pdf"
+        )
+
+        plantilla_base = PdfReader(
+            plantilla_path
         )
 
         # =========================
@@ -90,7 +107,9 @@ def generar():
             # ==================================================
             if len(fotos) == 1:
 
-                img = procesar_base64(fotos[0])
+                img = procesar_base64(
+                    fotos[0]
+                )
 
                 iw, ih = img.getSize()
 
@@ -98,8 +117,15 @@ def generar():
                 margin_top = 140
                 margin_bottom = 100
 
-                usable_w = width - (margin_x * 2)
-                usable_h = height - margin_top - margin_bottom
+                usable_w = width - (
+                    margin_x * 2
+                )
+
+                usable_h = (
+                    height
+                    - margin_top
+                    - margin_bottom
+                )
 
                 scale = min(
                     usable_w / iw,
@@ -109,8 +135,15 @@ def generar():
                 w = iw * scale
                 h = ih * scale
 
-                x = margin_x + (usable_w - w) / 2
-                y = margin_bottom + (usable_h - h) / 2
+                x = (
+                    margin_x
+                    + (usable_w - w) / 2
+                )
+
+                y = (
+                    margin_bottom
+                    + (usable_h - h) / 2
+                )
 
                 c.drawImage(
                     img,
@@ -127,30 +160,52 @@ def generar():
             # ==================================================
             elif len(fotos) > 1:
 
-                cols = 2 if len(fotos) <= 8 else 3
+                cols = (
+                    2
+                    if len(fotos) <= 8
+                    else 3
+                )
 
                 margin_x = 45
                 margin_top = 140
                 margin_bottom = 60
+
                 gap = 10
 
-                usable_w = width - (margin_x * 2)
-                usable_h = height - margin_top - margin_bottom
+                usable_w = (
+                    width
+                    - (margin_x * 2)
+                )
+
+                usable_h = (
+                    height
+                    - margin_top
+                    - margin_bottom
+                )
 
                 img_w = (
-                    usable_w - (cols - 1) * gap
+                    usable_w
+                    - (cols - 1) * gap
                 ) / cols
 
                 rows = (
-                    len(fotos) + cols - 1
+                    len(fotos)
+                    + cols
+                    - 1
                 ) // cols
 
                 img_h = (
-                    usable_h - (rows - 1) * gap
+                    usable_h
+                    - (rows - 1) * gap
                 ) / rows
 
                 x0 = margin_x
-                y0 = height - margin_top - img_h
+
+                y0 = (
+                    height
+                    - margin_top
+                    - img_h
+                )
 
                 x = x0
                 y = y0
@@ -171,22 +226,36 @@ def generar():
 
                     c.drawImage(
                         img,
-                        x + (img_w - w) / 2,
-                        y + (img_h - h) / 2,
+                        x + (
+                            img_w - w
+                        ) / 2,
+
+                        y + (
+                            img_h - h
+                        ) / 2,
+
                         w,
                         h,
+
                         preserveAspectRatio=True,
                         mask='auto'
                     )
 
-                    if (i + 1) % cols == 0:
+                    if (
+                        (i + 1) % cols == 0
+                    ):
 
                         x = x0
-                        y -= (img_h + gap)
+
+                        y -= (
+                            img_h + gap
+                        )
 
                     else:
 
-                        x += (img_w + gap)
+                        x += (
+                            img_w + gap
+                        )
 
             c.save()
 
@@ -194,13 +263,12 @@ def generar():
 
             overlay = PdfReader(packet)
 
-            plantilla = PdfReader(
-                plantilla_path
+            page = copy(
+                plantilla_base.pages[0]
             )
 
-            page = plantilla.pages[0]
-
             if len(overlay.pages) > 0:
+
                 page.merge_page(
                     overlay.pages[0]
                 )
@@ -216,7 +284,7 @@ def generar():
         return send_file(
             output,
             mimetype="application/pdf",
-            as_attachment=True,
+            as_attachment=False,
             download_name=f"{nombre}.pdf"
         )
 
@@ -234,4 +302,3 @@ if __name__ == "__main__":
         port=5000,
         debug=True
     )
-    

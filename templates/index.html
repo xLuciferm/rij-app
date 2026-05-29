@@ -587,10 +587,6 @@ function renumerarHojas(){
     }
 }
 
-/* =========================
-   GENERAR PDF
-========================= */
-
 async function generarPDF(){
 
     try{
@@ -600,19 +596,21 @@ async function generarPDF(){
         const hojas = [];
 
         document
-            .querySelectorAll(".hoja")
-            .forEach(h => {
+        .querySelectorAll(".hoja")
+        .forEach(h => {
 
             const fotos =
-                (h.fotos || []).map(file => {
+            (h.fotos || []).map(file => {
 
                 return new Promise(resolve => {
 
                     const reader =
-                        new FileReader();
+                    new FileReader();
 
                     reader.onload =
-                        e => resolve(e.target.result);
+                    e => resolve(
+                        e.target.result
+                    );
 
                     reader.readAsDataURL(file);
 
@@ -620,83 +618,56 @@ async function generarPDF(){
 
             });
 
-            hojas.push(Promise.all(fotos));
+            hojas.push(
+                Promise.all(fotos)
+            );
 
         });
 
         const data =
-            await Promise.all(hojas);
+        await Promise.all(hojas);
 
-        const response =
-            await fetch("/generar", {
+        // 🔥 FORMULARIO OCULTO
+        const form =
+        document.createElement("form");
 
-            method: "POST",
+        form.method = "POST";
 
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
+        form.action = "/generar";
 
-            body: JSON.stringify({
-                nombre,
-                hojas: data
-            })
+        form.target = "_blank";
 
+        const input =
+        document.createElement("input");
+
+        input.type = "hidden";
+
+        input.name = "data";
+
+        input.value = JSON.stringify({
+            nombre,
+            hojas: data
         });
 
-        if(!response.ok){
+        form.appendChild(input);
 
-            throw new Error(
-                "Error servidor"
-            );
-        }
+        document.body.appendChild(form);
 
-        // 🔥 MOBILE + PC
-        const blob =
-            await response.blob();
+        form.submit();
 
-        const url =
-            URL.createObjectURL(blob);
-
-        // 🔥 iPhone / Android
-        if(
-            /Android|iPhone|iPad|iPod/i
-            .test(navigator.userAgent)
-        ){
-
-            window.open(url, "_blank");
-
-        }else{
-
-            // 🔥 PC descarga directa
-            const a =
-                document.createElement("a");
-
-            a.href = url;
-
-            a.download =
-                `${nombre}.pdf`;
-
-            document.body.appendChild(a);
-
-            a.click();
-
-            a.remove();
-        }
-
-        setTimeout(() => {
-
-            URL.revokeObjectURL(url);
-
-        }, 10000);
+        form.remove();
 
     }catch(err){
 
         console.log(err);
 
-        alert("Error al generar PDF");
+        alert(
+            "Error al generar PDF"
+        );
     }
 }
+
+
 
 function cerrarModal(){
 
